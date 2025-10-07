@@ -1,40 +1,75 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RPG-SGBD — Batalha</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RPG SGBD — Batalha</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #0b0c10;
+      color: #fff;
+      font-family: monospace;
+      text-align: center;
+      padding: 30px;
+    }
+    .hp-bar {
+      width: 80%;
+      margin: 10px auto;
+      background: #222;
+      border: 2px solid #555;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .hp-fill {
+      height: 20px;
+      text-align: right;
+      padding-right: 5px;
+      color: #fff;
+      transition: width 0.5s;
+    }
+    #hp-personagem .hp-fill { background: #4caf50; }
+    #hp-monstro .hp-fill { background: #f44336; }
+    button {
+      margin: 8px;
+      padding: 10px 20px;
+      background: #222;
+      color: white;
+      border: 1px solid #888;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #333; }
+    #log {
+      background: #111;
+      border: 1px solid #444;
+      padding: 10px;
+      width: 80%;
+      margin: 20px auto;
+      text-align: left;
+      height: 200px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-  <h1>⚔️ RPG-SGBD — Batalha em Tempo Real ⚔️</h1>
+  <h1>⚔️ RPG-SGBD Batalha</h1>
 
-  <div id="battle">
-    <div class="entity player">
-      <h2>🧙‍♂️ Personagem</h2>
-      <div class="hp-bar">
-        <div id="hp-personagem" class="hp-fill" style="width: 100%"></div>
-      </div>
-      <p id="hp-personagem-text">HP: 100</p>
-    </div>
+  <h3>🧙‍♂️ Personagem</h3>
+  <div id="hp-personagem" class="hp-bar"><div class="hp-fill" style="width:100%">100 HP</div></div>
 
-    <div class="entity monster">
-      <h2>👹 Monstro</h2>
-      <div class="hp-bar">
-        <div id="hp-monstro" class="hp-fill" style="width: 100%"></div>
-      </div>
-      <p id="hp-monstro-text">HP: 100</p>
-    </div>
+  <h3>👹 Monstro</h3>
+  <div id="hp-monstro" class="hp-bar"><div class="hp-fill" style="width:100%">100 HP</div></div>
+
+  <div>
+    <button onclick="acao('atacar')">⚔️ Atacar</button>
+    <button onclick="acao('bloquear')">🛡️ Bloquear</button>
+    <button onclick="acao('curar')">💖 Curar</button>
   </div>
 
-  <div id="actions">
-    <button onclick="executarAcao('atacar')">⚔️ Atacar</button>
-    <button onclick="executarAcao('bloquear')">🛡️ Bloquear</button>
-    <button onclick="executarAcao('curar')">💚 Curar</button>
-  </div>
+  <div id="log"></div>
 
-  <div id="logs"></div>
-
-  <script src="main.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

@@ -2,9 +2,9 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
-import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { fileURLToPath } from "url";
+import { v4 as uuidv4 } from "uuid";
 
 dotenv.config();
 
@@ -16,6 +16,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// =====================
+// 🔧 Conexão MySQL
+// =====================
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -25,46 +28,61 @@ const pool = mysql.createPool({
   ssl: { rejectUnauthorized: false },
 });
 
-// 🆕 Criação de sessão automática
-app.get("/nova-sessao", async (req, res) => {
+// =====================
+// 🧙‍♂️ Criar Sessão Nova
+// =====================
+app.post("/nova-sessao", async (req, res) => {
   try {
     const sessionId = uuidv4();
+
     await pool.query(
-      "INSERT INTO batalhas (session_id, personagem_id, monstro_id, hp_personagem, hp_monstro) VALUES (?, 1, 1, 100, 100)",
+      "INSERT INTO batalhas (session_id, hp_personagem, hp_monstro) VALUES (?, 100, 100)",
       [sessionId]
     );
+
     res.json({ sucesso: true, sessionId });
   } catch (erro) {
+    console.error("Erro ao criar sessão:", erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ⚔️ Executa ação da batalha
+// =====================
+// ⚔️ Realizar Ação
+// =====================
 app.post("/acao", async (req, res) => {
-  const { acao, sessionId } = req.body;
+  const { sessionId, acao } = req.body;
 
   try {
-    const [resultado] = await pool.query("CALL realizar_acao_por_sessao(?, ?)", [
+    const [rows] = await pool.query("CALL realizar_acao_por_sessao(?, ?)", [
       sessionId,
       acao,
     ]);
-    res.json({ sucesso: true, resultado: resultado[0][0].resultado });
+
+    const r = rows[0][0];
+    res.json({
+      sucesso: true,
+      resultado: r.resultado,
+      hp_personagem: r.hp_personagem,
+      hp_monstro: r.hp_monstro,
+    });
   } catch (erro) {
+    console.error("Erro na ação:", erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// 🔍 Teste de conexão
-app.get("/testeConexao", async (req, res) => {
-  try {
-    const [rows] = await pool.query("SELECT NOW() AS hora_atual");
-    res.json({ sucesso: true, resultado: rows[0] });
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
+// =====================
+// 🌐 Rota Padrão
+// =====================
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// =====================
+// 🚀 Iniciar Servidor
+// =====================
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () =>
-  console.log(`Servidor RPG-SGBD rodando na porta ${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`Servidor RPG-SGBD rodando na porta ${PORT}`);
+});

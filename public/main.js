@@ -1,61 +1,51 @@
-let personagemHP = 100;
-let monstroHP = 100;
-const personagemID = 1;
-const monstroID = 1;
+let sessionId = null;
 
-const hpPersonagemBar = document.getElementById("hp-personagem");
-const hpMonstroBar = document.getElementById("hp-monstro");
-const hpPersonagemText = document.getElementById("hp-personagem-text");
-const hpMonstroText = document.getElementById("hp-monstro-text");
-const logsDiv = document.getElementById("logs");
-
-const API_BASE = ""; // vazio = mesmo domínio (Render)
-
-// Função principal para enviar ação
-async function executarAcao(acao) {
-  adicionarLog(`➡️ Você escolheu: ${acao}`);
-
-  try {
-    const resposta = await fetch(`${API_BASE}/acao`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        personagem_id: personagemID,
-        monstro_id: monstroID,
-        acao: acao,
-      }),
-    });
-
-    const data = await resposta.json();
-    if (!data.sucesso) throw new Error(data.erro);
-
-    const resultado = data.resultado[0];
-    atualizarHP(resultado.hp_personagem, resultado.hp_monstro);
-    adicionarLog(`🧙‍♂️ ${resultado.mensagem}`);
-  } catch (err) {
-    adicionarLog(`❌ Erro: ${err.message}`);
+async function iniciarSessao() {
+  const res = await fetch("/nova-sessao", { method: "POST" });
+  const data = await res.json();
+  if (data.sucesso) {
+    sessionId = data.sessionId;
+    log(`🧙‍♂️ Sessão iniciada: ${sessionId}`);
+  } else {
+    log("Erro ao iniciar sessão.");
   }
 }
 
-// Atualiza visualmente as barras de HP
-function atualizarHP(novoHPpersonagem, novoHPmonstro) {
-  personagemHP = novoHPpersonagem;
-  monstroHP = novoHPmonstro;
+async function acao(tipo) {
+  if (!sessionId) return log("Sessão não iniciada.");
+  log(`➡️ Você escolheu: ${tipo}`);
 
-  hpPersonagemBar.style.width = `${personagemHP}%`;
-  hpMonstroBar.style.width = `${monstroHP}%`;
+  const res = await fetch("/acao", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, acao: tipo }),
+  });
 
-  hpPersonagemText.textContent = `HP: ${personagemHP}`;
-  hpMonstroText.textContent = `HP: ${monstroHP}`;
-
-  if (personagemHP <= 0) adicionarLog("💀 Você foi derrotado!");
-  if (monstroHP <= 0) adicionarLog("🏆 O monstro foi derrotado!");
+  const data = await res.json();
+  if (data.sucesso) {
+    log(`🧙‍♂️ ${data.resultado}`);
+    atualizarHP(data.hp_personagem, data.hp_monstro);
+  } else {
+    log(`❌ Erro: ${data.erro}`);
+  }
 }
 
-// Adiciona mensagens ao log
-function adicionarLog(texto) {
-  const p = document.createElement("p");
-  p.textContent = texto;
-  p.classList.add("log-entry");
-  logsDiv.prepend(p);
+function atualizarHP(hpPersonagem, hpMonstro) {
+  const hp1 = document.querySelector("#hp-personagem .hp-fill");
+  const hp2 = document.querySelector("#hp-monstro .hp-fill");
+
+  hp1.style.width = `${hpPersonagem}%`;
+  hp1.textContent = `${hpPersonagem} HP`;
+  hp2.style.width = `${hpMonstro}%`;
+  hp2.textContent = `${hpMonstro} HP`;
 }
+
+function log(msg) {
+  const logBox = document.getElementById("log");
+  const line = document.createElement("div");
+  line.textContent = msg;
+  logBox.appendChild(line);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+window.onload = iniciarSessao;
