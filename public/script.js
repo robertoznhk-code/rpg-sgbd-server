@@ -3,36 +3,53 @@ let sessionId = null;
 async function iniciarSessao() {
   const res = await fetch("/nova-sessao", { method: "POST" });
   const data = await res.json();
-  if (data.sucesso) sessionId = data.sessionId;
+  if (data.sucesso) {
+    sessionId = data.sessionId;
+    console.log("Sessão:", sessionId);
+  } else {
+    alert("Falha ao criar sessão.");
+  }
 }
 
 async function carregarPersonagens() {
-  const res = await fetch("/personagens");
-  const data = await res.json();
-  if (data.sucesso) {
+  try {
+    const res = await fetch("/personagens");
+    const data = await res.json();
     const lista = document.getElementById("lista-personagens");
-    lista.innerHTML = "";
-    data.personagens.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "personagem";
-      div.textContent = `${p.nome} (${p.classe})`;
-      div.onclick = () => selecionarPersonagem(p.id);
-      lista.appendChild(div);
-    });
+
+    if (data.sucesso && data.personagens.length > 0) {
+      lista.innerHTML = "";
+      data.personagens.forEach((p) => {
+        const div = document.createElement("div");
+        div.className = "personagem";
+        div.textContent = `${p.nome} (${p.classe})`;
+        div.onclick = () => selecionarPersonagem(p.id);
+        lista.appendChild(div);
+      });
+    } else {
+      lista.innerHTML = "<p>Nenhum personagem encontrado.</p>";
+    }
+  } catch (e) {
+    console.error(e);
+    document.getElementById("lista-personagens").innerHTML =
+      "<p>Erro ao carregar personagens.</p>";
   }
 }
 
 async function selecionarPersonagem(id) {
+  if (!sessionId) await iniciarSessao();
   const res = await fetch("/selecionar-personagem", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId, personagemId: id })
+    body: JSON.stringify({ sessionId, personagemId: id }),
   });
   const data = await res.json();
   if (data.sucesso) {
     document.getElementById("selecao-personagem").style.display = "none";
     document.getElementById("batalha").style.display = "block";
     log("🧙‍♂️ Seu personagem está pronto para a batalha!");
+  } else {
+    log("❌ Erro ao selecionar personagem: " + data.erro);
   }
 }
 
@@ -41,7 +58,7 @@ async function acao(tipo) {
   const res = await fetch("/acao", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId, acao: tipo })
+    body: JSON.stringify({ sessionId, acao: tipo }),
   });
   const data = await res.json();
   if (data.sucesso) {
