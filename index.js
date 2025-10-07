@@ -52,51 +52,27 @@ app.post("/nova-sessao", async (req, res) => {
 // =====================
 app.post("/acao", async (req, res) => {
   const { sessionId, acao } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ sucesso: false, erro: "Sessão inválida." });
-  }
 
   try {
-    // Executa a ação do jogador
-    const [resultadoJogador] = await pool.query(
-      "CALL realizar_acao_por_sessao(?, ?)",
-      [sessionId, acao]
-    );
+    const [rows] = await pool.query("CALL realizar_acao_por_sessao(?, ?)", [sessionId, acao]);
 
-    // Ação aleatória do monstro
-    const acoesPossiveis = ["atacar", "bloquear", "curar"];
-    const acaoMonstro = acoesPossiveis[Math.floor(Math.random() * acoesPossiveis.length)];
-
-    const [resultadoMonstro] = await pool.query(
-      "CALL realizar_acao_por_sessao(?, ?)",
-      [sessionId, acaoMonstro]
-    );
-
-    // 🧠 Ajuste para evitar undefined
-    const jogadorData = resultadoJogador?.[0]?.[0] || {};
-    const monstroData = resultadoMonstro?.[0]?.[0] || {};
-
-    const jogadorMsg =
-      jogadorData.mensagem ||
-      jogadorData.resultado ||
-      `Você executou ${acao}.`;
-
-    const monstroMsg =
-      monstroData.mensagem ||
-      monstroData.resultado ||
-      `O monstro executou ${acaoMonstro}.`;
+    // 🔍 compatível com todas as versões do MySQL2
+    const resultado =
+      rows?.[0]?.[0] || rows?.[0] || rows || {};
 
     res.json({
       sucesso: true,
-      jogador: jogadorMsg,
-      monstro: monstroMsg,
-      hp_personagem: jogadorData.hp_personagem ?? 100,
-      hp_monstro: jogadorData.hp_monstro ?? 100,
+      jogador: resultado.mensagem_jogador || "Sem mensagem do jogador",
+      inimigo: resultado.mensagem_monstro || "Sem mensagem do monstro",
+      hp_personagem: resultado.hp_personagem ?? 100,
+      hp_monstro: resultado.hp_monstro ?? 100,
     });
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    console.error("Erro na rota /acao:", erro);
+    res.json({ sucesso: false, erro: erro.message });
   }
 });
+
 
 
 
