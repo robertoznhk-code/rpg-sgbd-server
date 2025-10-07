@@ -43,6 +43,16 @@ app.get("/testeConexao", async (req, res) => {
   }
 });
 
+app.get("/dbs", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SHOW DATABASES;");
+    res.json({ sucesso: true, databases: rows });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+
 // =====================
 // ⚔️ TESTE DE BATALHA (exemplo futuro)
 // =====================
