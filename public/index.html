@@ -3,25 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <title>RPG SGBD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="selecao-personagem">
-    <h2>Selecione seu personagem</h2>
-    <div id="lista-personagens">Carregando...</div>
-  </div>
-
-  <div id="batalha" style="display: none;">
-    <div class="hp-bar" id="hp-personagem"><div class="hp-fill">100 HP</div></div>
-    <div class="hp-bar" id="hp-monstro"><div class="hp-fill">100 HP</div></div>
-
-    <div id="acoes">
-      <button onclick="acao('atacar')">⚔️ Atacar</button>
-      <button onclick="acao('bloquear')">🛡️ Bloquear</button>
-      <button onclick="acao('curar')">💖 Curar</button>
+  <div class="container">
+    <!-- Tela de seleção -->
+    <div id="selecao-personagem">
+      <h1>⚔️ RPG SGBD</h1>
+      <h2>Selecione seu personagem</h2>
+      <div id="lista-personagens" class="lista">Carregando...</div>
     </div>
 
-    <div id="log" class="log"></div>
+    <!-- Tela de batalha -->
+    <div id="batalha" style="display: none;">
+      <h2>🔥 Batalha Iniciada 🔥</h2>
+
+      <div class="hp-container">
+        <div class="hp-label">🧙‍♂️ Jogador</div>
+        <div class="hp-bar" id="hp-personagem"><div class="hp-fill">100 HP</div></div>
+
+        <div class="hp-label">👹 Monstro</div>
+        <div class="hp-bar" id="hp-monstro"><div class="hp-fill">100 HP</div></div>
+      </div>
+
+      <div class="acoes">
+        <button onclick="acao('atacar')">⚔️ Atacar</button>
+        <button onclick="acao('bloquear')">🛡️ Bloquear</button>
+        <button onclick="acao('curar')">💖 Curar</button>
+      </div>
+
+      <div id="log" class="log"></div>
+    </div>
   </div>
 
   <script src="script.js"></script>
