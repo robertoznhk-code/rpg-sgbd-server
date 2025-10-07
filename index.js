@@ -1,7 +1,7 @@
 import express from "express";
-import mysql from "mysql2/promise";
-import dotenv from "dotenv";
 import cors from "cors";
+import dotenv from "dotenv";
+import mysql from "mysql2/promise";
 
 dotenv.config();
 
@@ -9,35 +9,57 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuração do banco Aiven via variáveis de ambiente (.env)
+// =====================
+// 🔧 CONFIGURAÇÃO MYSQL
+// =====================
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+  port: process.env.DB_PORT || 3306,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false // necessário para o Aiven
+  },
 });
 
-// 🔹 Rota padrão (para teste no navegador)
+// =====================
+// 🧠 ROTA PADRÃO
+// =====================
 app.get("/", (req, res) => {
-  res.send("Servidor RPG-SGBD funcionando!");
+  res.send("✅ Servidor RPG-SGBD funcionando no Render!");
 });
 
-// 🔹 Teste de conexão com o banco
+// =====================
+// 🧩 TESTE DE CONEXÃO
+// =====================
 app.get("/testeConexao", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT NOW() AS hora_atual");
     res.json({ sucesso: true, resultado: rows[0] });
   } catch (erro) {
-    console.error("Erro ao conectar ao banco:", erro);
+    console.error("Erro na conexão:", erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
+// =====================
+// ⚔️ TESTE DE BATALHA (exemplo futuro)
+// =====================
+app.get("/batalha", async (req, res) => {
+  try {
+    // Exemplo: simulação de ataque com dano aleatório
+    const dano = Math.floor(Math.random() * 20) + 5;
+    res.json({ resultado: `Você causou ${dano} de dano!` });
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});
+
+// =====================
+// 🚀 INICIAR SERVIDOR
+// =====================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor RPG-SGBD rodando na porta ${PORT}`);
 });
