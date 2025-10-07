@@ -71,3 +71,17 @@ h1 {
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding: 5px 0;
 }
+
+.personagem {
+  background: #222;
+  color: #fff;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.personagem:hover {
+  background: #333;
+  transform: scale(1.05);
+}
