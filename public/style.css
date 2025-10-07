@@ -134,3 +134,22 @@ button:hover {
     flex: 1 1 100%;
   }
 }
+
+
+.reiniciar-btn {
+  display: block;
+  margin: 20px auto;
+  padding: 12px 24px;
+  background-color: #e63946;
+  color: white;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.reiniciar-btn:hover {
+  background-color: #b02a37;
+}
+

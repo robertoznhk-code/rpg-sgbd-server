@@ -1,85 +1,43 @@
 let sessionId = null;
-
-const emojiClasses = {
-  Guerreiro: "⚔️",
-  Maga: "🪄",
-  Arqueiro: "🏹",
-  Cavaleiro: "🛡️",
-  default: "❓"
-};
+let batalhaEncerrada = false;
 
 async function iniciarSessao() {
-  const res = await fetch("/nova-sessao", { method: "POST" });
-  const data = await res.json();
-  if (data.sucesso) {
-    sessionId = data.sessionId;
-    console.log("Sessão iniciada:", sessionId);
-  } else {
-    console.error("Falha ao iniciar sessão");
-  }
-}
-
-async function carregarPersonagens() {
   try {
-    const res = await fetch("/personagens");
+    const res = await fetch("/nova-sessao", { method: "POST" });
     const data = await res.json();
-
-    const lista = document.getElementById("lista-personagens");
-    lista.innerHTML = "";
-
-    if (data.sucesso && data.personagens.length > 0) {
-      data.personagens.forEach((p) => {
-        const classe = p.classe || "Sem Classe";
-        const emoji = emojiClasses[classe] || emojiClasses.default;
-
-        const card = document.createElement("div");
-        card.className = "personagem";
-        card.innerHTML = `${emoji} <b>${p.nome}</b> <small>(${classe})</small>`;
-        card.onclick = () => selecionarPersonagem(p.id);
-
-        lista.appendChild(card);
-      });
+    if (data.sucesso && data.sessionId) {
+      sessionId = data.sessionId;
+      log(`🧙‍♂️ Sessão iniciada: ${sessionId}`);
     } else {
-      lista.innerHTML = "<p>Nenhum personagem encontrado.</p>";
+      log("❌ Falha ao criar sessão.");
     }
-  } catch (err) {
-    console.error("Erro ao carregar personagens:", err);
-    document.getElementById("lista-personagens").innerHTML =
-      "<p>Erro ao carregar personagens.</p>";
-  }
-}
-
-async function selecionarPersonagem(id) {
-  if (!sessionId) await iniciarSessao();
-  const res = await fetch("/selecionar-personagem", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId, personagemId: id }),
-  });
-  const data = await res.json();
-
-  if (data.sucesso) {
-    document.getElementById("selecao-personagem").style.display = "none";
-    document.getElementById("batalha").style.display = "block";
-    log("🧙‍♂️ Seu personagem está pronto para lutar!");
-  } else {
-    log("❌ Erro: " + data.erro);
+  } catch (e) {
+    log("❌ Erro ao iniciar sessão: " + e.message);
   }
 }
 
 async function acao(tipo) {
-  if (!sessionId) return;
+  if (batalhaEncerrada) return; // bloqueia ações após fim
+  if (!sessionId) {
+    log("⚠️ Sessão não iniciada. Criando uma nova...");
+    await iniciarSessao();
+    return;
+  }
+
+  log(`➡️ Você escolheu: ${tipo}`);
+
   const res = await fetch("/acao", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId, acao: tipo }),
   });
+
   const data = await res.json();
 
   if (data.sucesso) {
-    log(`🧙‍♂️ ${data.jogador}`);
-    log(`👹 ${data.monstro}`);
+    log(`🧙‍♂️ ${data.resultado}`);
     atualizarHP(data.hp_personagem, data.hp_monstro);
+    verificarFim(data.hp_personagem, data.hp_monstro);
   } else {
     log(`❌ Erro: ${data.erro}`);
   }
@@ -88,10 +46,34 @@ async function acao(tipo) {
 function atualizarHP(hpPersonagem, hpMonstro) {
   const hp1 = document.querySelector("#hp-personagem .hp-fill");
   const hp2 = document.querySelector("#hp-monstro .hp-fill");
+
   hp1.style.width = `${hpPersonagem}%`;
   hp1.textContent = `${hpPersonagem} HP`;
   hp2.style.width = `${hpMonstro}%`;
   hp2.textContent = `${hpMonstro} HP`;
+}
+
+function verificarFim(hpPersonagem, hpMonstro) {
+  if (hpPersonagem <= 0 || hpMonstro <= 0) {
+    batalhaEncerrada = true;
+    desativarBotoes();
+
+    const msg =
+      hpPersonagem <= 0
+        ? "💀 Você foi derrotado!"
+        : "🏆 Você venceu o monstro!";
+    log(msg);
+
+    const reiniciar = document.createElement("button");
+    reiniciar.textContent = "🔄 Reiniciar Batalha";
+    reiniciar.classList.add("reiniciar-btn");
+    reiniciar.onclick = () => location.reload();
+    document.body.appendChild(reiniciar);
+  }
+}
+
+function desativarBotoes() {
+  document.querySelectorAll("button").forEach((b) => (b.disabled = true));
 }
 
 function log(msg) {
@@ -102,7 +84,4 @@ function log(msg) {
   logBox.scrollTop = logBox.scrollHeight;
 }
 
-window.onload = async () => {
-  await iniciarSessao();
-  await carregarPersonagens();
-};
+window.onload = iniciarSessao;
