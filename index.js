@@ -72,10 +72,6 @@ app.post("/acao", async (req, res) => {
     res.json({ sucesso: false, erro: erro.message });
   }
 });
-
-
-
-
 // =====================
 // 🌐 Rota Padrão
 // =====================
@@ -90,3 +86,27 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Servidor RPG-SGBD rodando na porta ${PORT}`);
 });
+// Listar personagens
+app.get("/personagens", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT * FROM personagens");
+    res.json({ sucesso: true, personagens: rows });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// Escolher personagem
+app.post("/selecionar-personagem", async (req, res) => {
+  const { sessionId, personagemId } = req.body;
+  try {
+    await pool.query(
+      "UPDATE sessoes SET personagem_id = ? WHERE session_id = ?",
+      [personagemId, sessionId]
+    );
+    res.json({ sucesso: true, mensagem: "Personagem selecionado!" });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+

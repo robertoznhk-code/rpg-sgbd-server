@@ -89,4 +89,37 @@ function log(msg) {
   logBox.scrollTop = logBox.scrollHeight;
 }
 
+async function carregarPersonagens() {
+  const res = await fetch("/personagens");
+  const data = await res.json();
+  const lista = document.getElementById("lista-personagens");
+
+  data.personagens.forEach(p => {
+    const btn = document.createElement("button");
+    btn.textContent = `${p.nome} (${p.classe})`;
+    btn.onclick = () => selecionarPersonagem(p.id);
+    lista.appendChild(btn);
+  });
+}
+
+async function selecionarPersonagem(id) {
+  const res = await fetch("/selecionar-personagem", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, personagemId: id })
+  });
+  const data = await res.json();
+  if (data.sucesso) {
+    document.getElementById("selecao-personagem").style.display = "none";
+    document.getElementById("batalha").style.display = "block";
+    log("🧙‍♂️ Personagem selecionado!");
+  }
+}
+
+window.onload = async () => {
+  await iniciarSessao();
+  await carregarPersonagens();
+};
+
+
 window.onload = iniciarSessao;
