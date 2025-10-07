@@ -1,0 +1,73 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: radial-gradient(circle, #1b1b1b, #0a0a0a);
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  color: #ffd700;
+  margin-bottom: 20px;
+}
+
+#battle {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+.entity {
+  background: #222;
+  padding: 20px;
+  border-radius: 10px;
+  width: 40%;
+}
+
+.hp-bar {
+  background: #555;
+  border-radius: 10px;
+  height: 25px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.hp-fill {
+  background: linear-gradient(90deg, #ff4040, #ff8080);
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+#actions button {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #333;
+  color: white;
+  transition: 0.3s;
+}
+
+#actions button:hover {
+  background: #555;
+}
+
+#logs {
+  margin-top: 20px;
+  text-align: left;
+  width: 60%;
+  margin-inline: auto;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  border-radius: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 5px 0;
+}

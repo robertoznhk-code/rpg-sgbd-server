@@ -1,74 +1,40 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>RPG SGBD - Batalha</title>
-  <style>
-    body {
-      font-family: "Courier New", monospace;
-      background: #1b1b1b;
-      color: #eee;
-      text-align: center;
-      padding: 40px;
-    }
-    #log {
-      margin: 30px auto;
-      padding: 20px;
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 10px;
-      width: 600px;
-      height: 300px;
-      overflow-y: auto;
-    }
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: #444;
-      color: #fff;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background 0.2s;
-    }
-    button:hover { background: #666; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG-SGBD — Batalha</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>⚔️ RPG-SGBD - Batalha em Tempo Real</h1>
-  <div id="log"></div>
-  <div>
-    <button onclick="enviarAcao('atacar')">⚔️ Atacar</button>
-    <button onclick="enviarAcao('bloquear')">🛡️ Bloquear</button>
-    <button onclick="enviarAcao('curar')">💊 Curar</button>
+  <h1>⚔️ RPG-SGBD — Batalha em Tempo Real ⚔️</h1>
+
+  <div id="battle">
+    <div class="entity player">
+      <h2>🧙‍♂️ Personagem</h2>
+      <div class="hp-bar">
+        <div id="hp-personagem" class="hp-fill" style="width: 100%"></div>
+      </div>
+      <p id="hp-personagem-text">HP: 100</p>
+    </div>
+
+    <div class="entity monster">
+      <h2>👹 Monstro</h2>
+      <div class="hp-bar">
+        <div id="hp-monstro" class="hp-fill" style="width: 100%"></div>
+      </div>
+      <p id="hp-monstro-text">HP: 100</p>
+    </div>
   </div>
 
-  <script>
-    const logDiv = document.getElementById("log");
+  <div id="actions">
+    <button onclick="executarAcao('atacar')">⚔️ Atacar</button>
+    <button onclick="executarAcao('bloquear')">🛡️ Bloquear</button>
+    <button onclick="executarAcao('curar')">💚 Curar</button>
+  </div>
 
-    async function enviarAcao(acao) {
-      const resposta = await fetch("/acao", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ acao }),
-      });
+  <div id="logs"></div>
 
-      const dados = await resposta.json();
-      if (dados.sucesso) {
-        adicionarLog(`👤 ${dados.jogador}`);
-        adicionarLog(`👹 ${dados.inimigo}`);
-      } else {
-        adicionarLog("❌ Erro na batalha!");
-      }
-    }
-
-    function adicionarLog(texto) {
-      const linha = document.createElement("div");
-      linha.textContent = texto;
-      logDiv.appendChild(linha);
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-  </script>
+  <script src="main.js"></script>
 </body>
 </html>
