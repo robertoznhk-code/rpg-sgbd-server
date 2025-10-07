@@ -52,25 +52,40 @@ app.post("/nova-sessao", async (req, res) => {
 // =====================
 app.post("/acao", async (req, res) => {
   const { sessionId, acao } = req.body;
+  if (!sessionId) return res.status(400).json({ sucesso: false, erro: "Sessão inválida." });
 
   try {
-    const [rows] = await pool.query("CALL realizar_acao_por_sessao(?, ?)", [
-      sessionId,
-      acao,
-    ]);
+    // Ação do jogador
+    const [resultadoJogador] = await pool.query(
+      "CALL realizar_acao_por_sessao(?, ?)",
+      [sessionId, acao]
+    );
 
-    const r = rows[0][0];
+    // Ação aleatória do monstro
+    const acoesPossiveis = ["atacar", "bloquear", "curar"];
+    const acaoMonstro = acoesPossiveis[Math.floor(Math.random() * acoesPossiveis.length)];
+
+    const [resultadoMonstro] = await pool.query(
+      "CALL realizar_acao_por_sessao(?, ?)",
+      [sessionId, acaoMonstro]
+    );
+
+    const jogador = resultadoJogador[0][0];
+    const monstro = resultadoMonstro[0][0];
+
     res.json({
       sucesso: true,
-      resultado: r.resultado,
-      hp_personagem: r.hp_personagem,
-      hp_monstro: r.hp_monstro,
+      jogador: `Você usou **${acao}** — ${jogador.resultado || "ação executada"}`,
+      monstro: `O monstro usou **${acaoMonstro}** — ${monstro.resultado || "ação executada"}`,
+      hp_personagem: jogador.hp_personagem,
+      hp_monstro: jogador.hp_monstro,
     });
+
   } catch (erro) {
-    console.error("Erro na ação:", erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
+
 
 // =====================
 // 🌐 Rota Padrão
