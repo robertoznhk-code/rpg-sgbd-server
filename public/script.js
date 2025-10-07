@@ -1,56 +1,54 @@
 let sessionId = null;
 
-// 🧩 mapa de emojis por classe
 const emojiClasses = {
   Guerreiro: "⚔️",
   Maga: "🪄",
   Arqueiro: "🏹",
   Cavaleiro: "🛡️",
-  Paladino: "✨",
-  Assassino: "🗡️",
-  Druida: "🌿",
-  Necromante: "💀",
-  default: "❓",
+  default: "❓"
 };
 
-// cria sessão
 async function iniciarSessao() {
   const res = await fetch("/nova-sessao", { method: "POST" });
   const data = await res.json();
-  if (data.sucesso) sessionId = data.sessionId;
-  else alert("Falha ao criar sessão.");
+  if (data.sucesso) {
+    sessionId = data.sessionId;
+    console.log("Sessão iniciada:", sessionId);
+  } else {
+    console.error("Falha ao iniciar sessão");
+  }
 }
 
-// carrega personagens
 async function carregarPersonagens() {
   try {
     const res = await fetch("/personagens");
     const data = await res.json();
+
     const lista = document.getElementById("lista-personagens");
+    lista.innerHTML = "";
 
     if (data.sucesso && data.personagens.length > 0) {
-      lista.innerHTML = "";
       data.personagens.forEach((p) => {
         const classe = p.classe || "Sem Classe";
         const emoji = emojiClasses[classe] || emojiClasses.default;
 
-        const div = document.createElement("div");
-        div.className = "personagem";
-        div.innerHTML = `${emoji} <strong>${p.nome}</strong> <small>(${classe})</small>`;
-        div.onclick = () => selecionarPersonagem(p.id);
-        lista.appendChild(div);
+        const card = document.createElement("div");
+        card.className = "personagem";
+        card.innerHTML = `${emoji} <b>${p.nome}</b> <small>(${classe})</small>`;
+        card.onclick = () => selecionarPersonagem(p.id);
+
+        lista.appendChild(card);
       });
     } else {
       lista.innerHTML = "<p>Nenhum personagem encontrado.</p>";
     }
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error("Erro ao carregar personagens:", err);
     document.getElementById("lista-personagens").innerHTML =
       "<p>Erro ao carregar personagens.</p>";
   }
 }
 
-// seleciona personagem
 async function selecionarPersonagem(id) {
   if (!sessionId) await iniciarSessao();
   const res = await fetch("/selecionar-personagem", {
@@ -63,11 +61,12 @@ async function selecionarPersonagem(id) {
   if (data.sucesso) {
     document.getElementById("selecao-personagem").style.display = "none";
     document.getElementById("batalha").style.display = "block";
-    log("🧙‍♂️ Seu personagem está pronto para a batalha!");
-  } else log("❌ Erro ao selecionar personagem: " + data.erro);
+    log("🧙‍♂️ Seu personagem está pronto para lutar!");
+  } else {
+    log("❌ Erro: " + data.erro);
+  }
 }
 
-// executa ação
 async function acao(tipo) {
   if (!sessionId) return;
   const res = await fetch("/acao", {
@@ -76,14 +75,16 @@ async function acao(tipo) {
     body: JSON.stringify({ sessionId, acao: tipo }),
   });
   const data = await res.json();
+
   if (data.sucesso) {
     log(`🧙‍♂️ ${data.jogador}`);
     log(`👹 ${data.monstro}`);
     atualizarHP(data.hp_personagem, data.hp_monstro);
-  } else log(`❌ Erro: ${data.erro}`);
+  } else {
+    log(`❌ Erro: ${data.erro}`);
+  }
 }
 
-// atualiza HP
 function atualizarHP(hpPersonagem, hpMonstro) {
   const hp1 = document.querySelector("#hp-personagem .hp-fill");
   const hp2 = document.querySelector("#hp-monstro .hp-fill");
@@ -93,7 +94,6 @@ function atualizarHP(hpPersonagem, hpMonstro) {
   hp2.textContent = `${hpMonstro} HP`;
 }
 
-// log visual
 function log(msg) {
   const logBox = document.getElementById("log");
   const line = document.createElement("div");

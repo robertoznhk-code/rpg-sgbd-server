@@ -1,38 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>RPG SGBD</title>
-  <style>
-    body { font-family: Arial; background: #111; color: #eee; text-align: center; }
-    .hp-bar { width: 200px; height: 20px; background: #333; border-radius: 10px; margin: 10px auto; position: relative; }
-    .hp-fill { height: 100%; background: #e74c3c; border-radius: 10px; text-align: center; line-height: 20px; color: #fff; }
-    button { margin: 5px; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
-    button:hover { background: #555; color: white; }
-    #log { background: #222; height: 200px; overflow-y: auto; padding: 10px; border-radius: 8px; width: 80%; margin: 20px auto; }
-    .personagem { cursor: pointer; display: inline-block; margin: 10px; border: 2px solid transparent; padding: 5px; border-radius: 5px; }
-    .personagem:hover { border-color: #00bfff; background: #333; }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>⚔️ RPG-SGBD</h1>
   <div id="selecao-personagem">
-    <h2>Escolha seu personagem</h2>
-    <div id="lista-personagens"></div>
+    <h2>Selecione seu personagem</h2>
+    <div id="lista-personagens">Carregando...</div>
   </div>
 
-  <div id="batalha" style="display:none;">
-    <h3>🧙‍♂️ Herói</h3>
-    <div id="hp-personagem" class="hp-bar"><div class="hp-fill" style="width:100%">100 HP</div></div>
+  <div id="batalha" style="display: none;">
+    <div class="hp-bar" id="hp-personagem"><div class="hp-fill">100 HP</div></div>
+    <div class="hp-bar" id="hp-monstro"><div class="hp-fill">100 HP</div></div>
 
-    <h3>👹 Monstro</h3>
-    <div id="hp-monstro" class="hp-bar"><div class="hp-fill" style="width:100%">100 HP</div></div>
+    <div id="acoes">
+      <button onclick="acao('atacar')">⚔️ Atacar</button>
+      <button onclick="acao('bloquear')">🛡️ Bloquear</button>
+      <button onclick="acao('curar')">💖 Curar</button>
+    </div>
 
-    <button onclick="acao('atacar')">⚔️ Atacar</button>
-    <button onclick="acao('bloquear')">🛡️ Bloquear</button>
-    <button onclick="acao('curar')">💖 Curar</button>
-
-    <div id="log"></div>
+    <div id="log" class="log"></div>
   </div>
 
   <script src="script.js"></script>
