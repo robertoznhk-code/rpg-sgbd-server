@@ -14,9 +14,11 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // ✅ garante o script.js acessível
+app.use(express.static(path.join(__dirname, "public"))); // ✅ garante script.js acessível
 
-// 🧠 Configuração do banco
+// =============================
+// 🔧 Configuração do MySQL
+// =============================
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -26,22 +28,16 @@ const pool = mysql.createPool({
   ssl: { rejectUnauthorized: false },
 });
 
-// ✅ Teste básico
+// =============================
+// ✅ Rota principal
+// =============================
 app.get("/", (req, res) => {
-  res.send("✅ Servidor RPG-SGBD ativo no Render.");
+  res.send("✅ Servidor RPG-SGBD ativo e servindo frontend.");
 });
 
-// 🧩 Listar bancos
-app.get("/dbs", async (req, res) => {
-  try {
-    const [rows] = await pool.query("SHOW DATABASES;");
-    res.json({ sucesso: true, databases: rows });
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// 🧙 Criar sessão
+// =============================
+// 🧙 Criar nova sessão
+// =============================
 app.post("/nova-sessao", async (req, res) => {
   const sessionId = uuidv4();
   try {
@@ -49,14 +45,17 @@ app.post("/nova-sessao", async (req, res) => {
       "INSERT INTO sessoes (session_id, hp_personagem, hp_monstro) VALUES (?, 100, 100);",
       [sessionId]
     );
+    console.log(`🆕 Nova sessão criada: ${sessionId}`);
     res.json({ sucesso: true, sessionId });
   } catch (erro) {
-    console.error("Erro ao criar sessão:", erro.message);
+    console.error("❌ Erro ao criar sessão:", erro.message);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
+// =============================
 // 🧩 Listar personagens
+// =============================
 app.get("/personagens", async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -64,14 +63,16 @@ app.get("/personagens", async (req, res) => {
     );
     res.json({ sucesso: true, personagens: rows });
   } catch (erro) {
+    console.error("❌ Erro ao listar personagens:", erro.message);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ⚔️ Ação de batalha
+// =============================
+// ⚔️ Lógica de batalha
+// =============================
 app.post("/acao", async (req, res) => {
   const { sessionId, personagemId, acao } = req.body;
-
   if (!sessionId || !personagemId)
     return res.status(400).json({ sucesso: false, erro: "Sessão ou personagem ausente." });
 
@@ -80,14 +81,19 @@ app.post("/acao", async (req, res) => {
       "SELECT * FROM sessoes WHERE session_id = ? LIMIT 1;",
       [sessionId]
     );
-    if (!sessao) return res.status(404).json({ sucesso: false, erro: "Sessão não encontrada." });
+
+    if (!sessao)
+      return res.status(404).json({ sucesso: false, erro: "Sessão não encontrada." });
 
     let { hp_personagem, hp_monstro } = sessao;
-    const danoMonstro = Math.floor(Math.random() * 18) + 7; // 🧨 aumenta dano do monstro
+    const danoMonstro = Math.floor(Math.random() * 18) + 7; // 💀 monstro causa mais dano
 
     let resultadoJogador = "";
     let resultadoMonstro = "";
 
+    // =============================
+    // 🎯 Jogador realiza a ação
+    // =============================
     switch (acao) {
       case "atacar":
         const dano = Math.floor(Math.random() * 15) + 5;
@@ -108,6 +114,9 @@ app.post("/acao", async (req, res) => {
         break;
     }
 
+    // =============================
+    // 👹 Ação do monstro
+    // =============================
     if (hp_monstro > 0 && acao !== "bloquear") {
       hp_personagem -= danoMonstro;
       resultadoMonstro = `O monstro atacou e causou ${danoMonstro} de dano!`;
@@ -117,15 +126,38 @@ app.post("/acao", async (req, res) => {
       resultadoMonstro = "O monstro aguardou sua ação.";
     }
 
-    // 🧮 Valida fim da batalha
-    if (hp_personagem <= 0) resultadoJogador = "💀 Você foi derrotado!";
-    if (hp_monstro <= 0) resultadoJogador = "🏆 Você venceu a batalha!";
+    // =============================
+    // 💀 Condição de fim de jogo
+    // =============================
+    if (hp_personagem <= 0) {
+      resultadoJogador = "💀 Você foi derrotado!";
+    } else if (hp_monstro <= 0) {
+      resultadoJogador = "🏆 Você venceu a batalha!";
+    }
 
+    // =============================
+    // 💾 Atualizar estado da sessão
+    // =============================
     await pool.query(
       "UPDATE sessoes SET hp_personagem = ?, hp_monstro = ? WHERE session_id = ?;",
       [Math.max(hp_personagem, 0), Math.max(hp_monstro, 0), sessionId]
     );
 
+    // =============================
+    // 🖥️ Logs no console
+    // =============================
+    console.log("📜 Log de Ação ----------------------");
+    console.log(`🎮 Sessão: ${sessionId}`);
+    console.log(`🧙 Ação do jogador: ${acao}`);
+    console.log(`➡️ Resultado do jogador: ${resultadoJogador}`);
+    console.log(`👹 Resultado do monstro: ${resultadoMonstro}`);
+    console.log(`❤️ HP do Jogador: ${hp_personagem}`);
+    console.log(`💀 HP do Monstro: ${hp_monstro}`);
+    console.log("------------------------------------\n");
+
+    // =============================
+    // 🧾 Resposta para o front-end
+    // =============================
     res.json({
       sucesso: true,
       jogador: resultadoJogador,
@@ -134,11 +166,15 @@ app.post("/acao", async (req, res) => {
       hp_monstro: Math.max(hp_monstro, 0),
     });
   } catch (erro) {
-    console.error("Erro na ação:", erro.message);
+    console.error("❌ Erro na ação:", erro.message);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// 🚀 Inicialização
+// =============================
+// 🚀 Inicialização do Servidor
+// =============================
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor RPG-SGBD rodando na porta ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🟢 Servidor RPG-SGBD rodando na porta ${PORT}`)
+);
