@@ -1,150 +1,131 @@
-let sessionId = null;
-let personagemSelecionado = null;
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mysql from "mysql2/promise";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// 🧩 Função para iniciar sessão
-async function iniciarSessao() {
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+// =====================
+// 🔧 CONEXÃO MYSQL
+// =====================
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306,
+  ssl: { rejectUnauthorized: false },
+});
+
+// =====================
+// 🌐 ROTAS DO SERVIDOR
+// =====================
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// 🔹 Listar personagens
+app.get("/personagens", async (req, res) => {
   try {
-    const res = await fetch("/nova-sessao", { method: "POST" });
-    const data = await res.json();
-
-    if (data.sucesso && data.sessionId) {
-      sessionId = data.sessionId;
-      log(`🧙‍♂️ Sessão iniciada: ${sessionId}`);
-    } else {
-      log("❌ Falha ao criar sessão.");
-    }
-  } catch (e) {
-    log("❌ Erro ao iniciar sessão: " + e.message);
+    const [rows] = await pool.query("SELECT * FROM personagens;");
+    res.json({ sucesso: true, personagens: rows });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
   }
-}
+});
 
-// 🧙‍♂️ Carregar personagens
-async function carregarPersonagens() {
-  const container = document.getElementById("personagem-selecao");
-  container.innerHTML = "<p>Carregando...</p>";
+// 🔹 Nova sessão
+app.post("/nova-sessao", async (req, res) => {
+  try {
+    const sessionId = uuidv4();
+    await pool.query(
+      "INSERT INTO sessoes (session_id, hp_personagem, hp_monstro) VALUES (?, 100, 100);",
+      [sessionId]
+    );
+    res.json({ sucesso: true, sessionId });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// 🔹 Ação (batalha)
+app.post("/acao", async (req, res) => {
+  const { sessionId, personagemId, acao } = req.body;
+
+  if (!sessionId || !acao) {
+    return res.status(400).json({ sucesso: false, erro: "Dados inválidos" });
+  }
 
   try {
-    const res = await fetch("/personagens");
-    const data = await res.json();
+    const [[sessao]] = await pool.query(
+      "SELECT * FROM sessoes WHERE session_id = ?",
+      [sessionId]
+    );
+    if (!sessao)
+      return res.json({ sucesso: false, erro: "Sessão não encontrada." });
 
-    if (!data.sucesso || !data.personagens.length) {
-      container.innerHTML = "<p>Nenhum personagem encontrado.</p>";
-      return;
+    let hpPersonagem = sessao.hp_personagem;
+    let hpMonstro = sessao.hp_monstro;
+    let resultadoJogador = "";
+    let resultadoMonstro = "";
+
+    const danoMonstro = Math.floor(Math.random() * 20) + 10;
+
+    if (acao === "atacar") {
+      const dano = Math.floor(Math.random() * 20) + 5;
+      hpMonstro -= dano;
+      resultadoJogador = `Você atacou e causou ${dano} de dano!`;
+    } else if (acao === "bloquear") {
+      resultadoJogador = "Você se defendeu e reduziu o dano inimigo!";
+      hpPersonagem -= Math.floor(danoMonstro / 3);
+    } else if (acao === "curar") {
+      const cura = Math.floor(Math.random() * 12) + 3;
+      hpPersonagem = Math.min(100, hpPersonagem + cura);
+      resultadoJogador = `Você se curou em ${cura} pontos!`;
     }
 
-    container.innerHTML = "";
+    // Ação aleatória do monstro
+    const acaoMonstro = ["atacar", "bloquear"][Math.floor(Math.random() * 2)];
+    if (acaoMonstro === "atacar") {
+      hpPersonagem -= danoMonstro;
+      resultadoMonstro = `O monstro atacou e causou ${danoMonstro} de dano!`;
+    } else {
+      resultadoMonstro = "O monstro bloqueou parte do dano!";
+    }
 
-    const emojis = ["🗡️", "🏹", "🛡️", "⚔️", "🔥", "💫", "🌿"];
+    hpPersonagem = Math.max(0, hpPersonagem);
+    hpMonstro = Math.max(0, hpMonstro);
 
-    data.personagens.forEach((p, i) => {
-      const card = document.createElement("button");
-      card.textContent = `${emojis[i % emojis.length]} ${p.nome} (${p.classe || "Aventureiro"})`;
-      card.className = "personagem-card";
-      card.onclick = () => selecionarPersonagem(p);
-      container.appendChild(card);
+    await pool.query(
+      "UPDATE sessoes SET hp_personagem = ?, hp_monstro = ? WHERE session_id = ?",
+      [hpPersonagem, hpMonstro, sessionId]
+    );
+
+    res.json({
+      sucesso: true,
+      jogador: resultadoJogador,
+      monstro: resultadoMonstro,
+      hp_personagem: hpPersonagem,
+      hp_monstro: hpMonstro,
     });
   } catch (erro) {
-    container.innerHTML = "<p>❌ Erro ao carregar personagens.</p>";
-    console.error("Erro ao carregar personagens:", erro);
+    res.status(500).json({ sucesso: false, erro: erro.message });
   }
-}
+});
 
-// 🧭 Selecionar personagem
-async function selecionarPersonagem(personagem) {
-  personagemSelecionado = personagem;
-  document.getElementById("nome-personagem").textContent = personagem.nome;
-
-  // Esconde o menu de seleção
-  const container = document.getElementById("personagem-selecao");
-  container.style.display = "none";
-
-  log(`🧙‍♂️ Você escolheu ${personagem.nome} (${personagem.classe || "Aventureiro"})!`);
-
-  // Inicia a sessão automaticamente
-  await iniciarSessao();
-}
-
-// ⚔️ Executar ação (atacar / bloquear / curar)
-async function acao(tipo) {
-  if (!sessionId) {
-    log("⚠️ Sessão não iniciada. Criando uma nova...");
-    await iniciarSessao();
-    return;
-  }
-
-  if (!personagemSelecionado) {
-    log("⚠️ Selecione um personagem antes de jogar!");
-    return;
-  }
-
-  log(`➡️ Você escolheu: ${tipo}`);
-
-  try {
-    const res = await fetch("/acao", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        personagemId: personagemSelecionado.id,
-        acao: tipo,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (data.sucesso) {
-      log(`🧙‍♂️ ${data.jogador}`);
-      log(`👹 ${data.monstro}`);
-      atualizarHP(data.hp_personagem, data.hp_monstro);
-      verificarFim(data.hp_personagem, data.hp_monstro);
-    } else {
-      log(`❌ Erro: ${data.erro}`);
-    }
-  } catch (erro) {
-    log(`❌ Falha na ação: ${erro.message}`);
-  }
-}
-
-// ❤️ Atualiza as barras de HP
-function atualizarHP(hpPersonagem, hpMonstro) {
-  const hp1 = document.querySelector("#hp-personagem .hp-fill");
-  const hp2 = document.querySelector("#hp-monstro .hp-fill");
-
-  hp1.style.width = `${hpPersonagem}%`;
-  hp1.textContent = `${hpPersonagem} HP`;
-  hp2.style.width = `${hpMonstro}%`;
-  hp2.textContent = `${hpMonstro} HP`;
-}
-
-// 💀 Fim de jogo
-function verificarFim(hpPersonagem, hpMonstro) {
-  if (hpPersonagem <= 0) {
-    log("💀 Você foi derrotado!");
-    desativarBotoes();
-  } else if (hpMonstro <= 0) {
-    log("🏆 Você venceu a batalha!");
-    desativarBotoes();
-  }
-}
-
-// 🚫 Desativa botões após o fim da batalha
-function desativarBotoes() {
-  document.querySelectorAll("#botoes button").forEach((b) => (b.disabled = true));
-  const reiniciar = document.createElement("button");
-  reiniciar.textContent = "🔄 Reiniciar Batalha";
-  reiniciar.onclick = () => location.reload();
-  reiniciar.style.marginTop = "20px";
-  document.getElementById("botoes").appendChild(reiniciar);
-}
-
-// 🪶 Adiciona logs na tela
-function log(msg) {
-  const logBox = document.getElementById("log");
-  const line = document.createElement("div");
-  line.textContent = msg;
-  logBox.appendChild(line);
-  logBox.scrollTop = logBox.scrollHeight;
-}
-
-// 🚀 Inicializa
-window.onload = carregarPersonagens;
+// =====================
+// 🚀 INICIAR SERVIDOR
+// =====================
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Servidor RPG-SGBD rodando na porta ${PORT}`));
