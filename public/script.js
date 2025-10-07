@@ -19,26 +19,36 @@ async function iniciarSessao() {
 async function acao(tipo) {
   if (!sessionId) {
     log("⚠️ Sessão não iniciada. Criando uma nova...");
-    await iniciarSessao(); // força criar antes de agir
+    await iniciarSessao();
     return;
   }
 
   log(`➡️ Você escolheu: ${tipo}`);
 
-  const res = await fetch("/acao", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId, acao: tipo }),
-  });
+  try {
+    const res = await fetch("/acao", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, acao: tipo }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.sucesso) {
-    log(`🧙‍♂️ ${data.resultado}`);
-    atualizarHP(data.hp_personagem, data.hp_monstro);
-    verificarFim(data.hp_personagem, data.hp_monstro);
-  } else {
-    log(`❌ Erro: ${data.erro}`);
+    if (data.sucesso) {
+      // Exibir ações
+      log(`🧙‍♂️ ${data.jogador}`);
+      log(`👹 ${data.inimigo}`);
+
+      // Atualizar HPs
+      atualizarHP(data.hp_personagem, data.hp_monstro);
+
+      // Verificar fim de batalha
+      verificarFim(data.hp_personagem, data.hp_monstro);
+    } else {
+      log(`❌ Erro: ${data.erro}`);
+    }
+  } catch (e) {
+    log(`⚠️ Erro de conexão: ${e.message}`);
   }
 }
 
@@ -48,6 +58,7 @@ function atualizarHP(hpPersonagem, hpMonstro) {
 
   hp1.style.width = `${hpPersonagem}%`;
   hp1.textContent = `${hpPersonagem} HP`;
+
   hp2.style.width = `${hpMonstro}%`;
   hp2.textContent = `${hpMonstro} HP`;
 }
