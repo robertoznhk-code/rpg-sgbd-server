@@ -10,17 +10,18 @@ app.use(express.json());
 app.use(express.static("public"));
 
 // 🔐 Conexão segura com Aiven (certificado em cert/ca.pem)
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
-  password: process.env.DB_PASS || process.env.DB_PASSWORD,
+  password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  ssl: {
-  ssl: { rejectUnauthorized: false },
-  },
-  connectionLimit: 5,
+  port: process.env.DB_PORT || 3306,
+  ssl: process.env.DB_CA_CERT
+    ? { ca: process.env.DB_CA_CERT }   // modo seguro
+    : { rejectUnauthorized: false },   // fallback local
 });
+
 
 // 🧩 Funções auxiliares
 async function getPotionItemId() {
