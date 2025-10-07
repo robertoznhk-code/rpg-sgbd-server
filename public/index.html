@@ -1,151 +1,309 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>⚔️ RPG SGBD</title>
-    <style>
-      body {
-        font-family: "Poppins", sans-serif;
-        background: linear-gradient(135deg, #111, #222);
-        color: white;
-        text-align: center;
-        margin: 0;
-        padding: 0;
-      }
-
-      h1 {
-        margin-top: 25px;
-      }
-
-      .hp-container {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        margin: 30px auto;
-        width: 90%;
-        max-width: 600px;
-      }
-
-      .hp-bar {
-        background: #333;
-        border-radius: 8px;
-        overflow: hidden;
-        width: 45%;
-        height: 30px;
-        position: relative;
-        border: 2px solid #444;
-      }
-
-      .hp-fill {
-        background: linear-gradient(90deg, #e63946, #ff6b6b);
-        height: 100%;
-        width: 100%;
-        transition: width 0.5s;
-        text-align: center;
-        line-height: 30px;
-        font-weight: bold;
-        color: #fff;
-      }
-
-      .labels {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 10px;
-      }
-
-      #botoes {
-        margin-top: 25px;
-      }
-
-      button {
-        font-size: 16px;
-        margin: 10px;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: 0.3s;
-      }
-
-      button:hover {
-        transform: scale(1.1);
-      }
-
-      .attack {
-        background: #ff595e;
-        color: white;
-      }
-
-      .heal {
-        background: #8ac926;
-        color: black;
-      }
-
-      .block {
-        background: #1982c4;
-        color: white;
-      }
-
-      #log {
-        margin-top: 30px;
-        background: #1a1a1a;
-        border: 1px solid #444;
-        border-radius: 10px;
-        padding: 15px;
-        width: 80%;
-        max-width: 600px;
-        height: 200px;
-        overflow-y: auto;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      @media (max-width: 600px) {
-        .hp-container {
-          flex-direction: column;
-        }
-
-        .hp-bar {
-          width: 80%;
-          margin-bottom: 20px;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <h1>⚔️ RPG SGBD</h1>
-    <h3>Selecione seu personagem</h3>
-
-    <div id="personagem-selecao">
-      <p>Carregando...</p>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RPG-SGBD — Dashboard</title>
+<style>
+:root {
+  --bg-dark: #0d1117;
+  --bg-panel: rgba(22,27,34,0.75);
+  --accent: #58a6ff;
+  --text: #f0f6fc;
+  --danger: #ff4d4d;
+  --success: #3fb950;
+  --glass: rgba(255,255,255,0.05);
+}
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+aside {
+  width: 320px;
+  background: var(--bg-panel);
+  border-right: 1px solid #30363d;
+  backdrop-filter: blur(10px);
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+}
+h1 {
+  color: var(--accent);
+  text-align: center;
+  margin: 0 0 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+#hp-container {
+  background: var(--glass);
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  height: 24px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+#hp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success), #2ea043);
+  width: 100%;
+  transition: width 0.4s ease;
+}
+#hp-label {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 0;
+  line-height: 24px;
+  font-size: 0.9em;
+  color: #fff;
+  text-shadow: 0 0 4px #000;
+}
+#mapa {
+  display: grid;
+  grid-template-columns: repeat(5, 45px);
+  grid-template-rows: repeat(5, 45px);
+  gap: 6px;
+  margin-top: 10px;
+}
+.cell {
+  width: 45px;
+  height: 45px;
+  border-radius: 8px;
+  background: var(--glass);
+  border: 1px solid #30363d;
+  transition: all 0.3s ease;
+}
+.visitado { background: #21262d; }
+.atual { background: var(--success); box-shadow: 0 0 10px var(--success); }
+.controles {
+  display: grid;
+  grid-template-columns: 70px 70px 70px;
+  grid-template-rows: 70px 70px 70px;
+  gap: 8px;
+  margin-top: 20px;
+}
+button {
+  background: var(--bg-panel);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+button:hover { background: var(--accent); color: #fff; transform: scale(1.05); }
+#resultado, #batalha {
+  background: var(--bg-panel);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  margin-top: 20px;
+  padding: 15px;
+  width: 80%;
+  text-align: center;
+  white-space: pre-wrap;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+#batalha { display: none; }
+#batalha-hp {
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: var(--accent);
+}
+#inventario ul { padding-left: 15px; list-style-type: "• "; }
+#inventario li { margin: 4px 0; }
+#pos { font-size: 0.95em; opacity: 0.85; }
+#log-exploracao {
+  margin-top: 20px;
+  width: 80%;
+  height: 160px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border-radius: 12px;
+  border: 1px solid #30363d;
+  padding: 10px;
+  font-size: 0.9em;
+  line-height: 1.4em;
+}
+.log-item {
+  margin: 4px 0;
+  padding: 6px;
+  border-left: 3px solid var(--accent);
+  background: rgba(88,166,255,0.1);
+  border-radius: 6px;
+}
+.log-item.monstro { border-color: var(--danger); background: rgba(255,77,77,0.1); }
+.log-item.item { border-color: var(--success); background: rgba(63,185,80,0.1); }
+.log-item.nada { border-color: #aaa; background: rgba(255,255,255,0.05); }
+</style>
+</head>
+<body>
+<aside>
+  <h1>🎮 RPG-SGBD</h1>
+  <div>
+    <strong>HP:</strong>
+    <div id="hp-container">
+      <div id="hp-bar"></div>
+      <div id="hp-label">100 / 100</div>
+      <div><strong>Nível:</strong> <span id="nivel">1</span></div>
     </div>
+  </div>
+  <div id="pos">Posição: (0, 0)</div>
+  <div id="inventario">
+    <h3>🎒 Inventário</h3>
+    <ul id="itens"></ul>
+  </div>
+</aside>
 
-    <div class="labels">
-      <div>🧙‍♂️ <strong id="nome-personagem">Você</strong></div>
-      <div>👹 <strong>Monstro</strong></div>
+<main>
+  <div id="mapa"></div>
+  <div class="controles">
+    <div></div>
+    <button onclick="explorar(1)">⬆️</button>
+    <div></div>
+    <button onclick="explorar(4)">⬅️</button>
+    <button onclick="explorar(2)">⬇️</button>
+    <button onclick="explorar(3)">➡️</button>
+  </div>
+  <div id="resultado">Use as setas para explorar o mapa.</div>
+  <div id="batalha">
+    <div id="batalha-hp">HP Jogador: 100 | HP Monstro: 100</div>
+    <div id="log">👹 Um monstro apareceu!</div>
+    <div>
+      <button onclick="turno('atacar')">⚔️ Atacar</button>
+      <button onclick="turno('bloquear')">🛡️ Bloquear</button>
+      <button onclick="turno('curar')">💊 Curar</button>
     </div>
+  </div>
+  <div id="log-exploracao"></div>
+</main>
 
-    <div class="hp-container">
-      <div id="hp-personagem" class="hp-bar">
-        <div class="hp-fill">100 HP</div>
-      </div>
+<script>
+const personagemId=1;
+let sessionId=null;
+let posX=0,posY=0;
+let emBatalha=false;
+const mapa=Array(5).fill().map(()=>Array(5).fill(false));
 
-      <div id="hp-monstro" class="hp-bar">
-        <div class="hp-fill">100 HP</div>
-      </div>
-    </div>
+function desenharMapa(){
+  const div=document.getElementById("mapa");
+  div.innerHTML="";
+  for(let y=0;y<5;y++){
+    for(let x=0;x<5;x++){
+      const cell=document.createElement("div");
+      cell.classList.add("cell");
+      if(mapa[y][x]) cell.classList.add("visitado");
+      if(x===posX&&y===posY) cell.classList.add("atual");
+      div.appendChild(cell);
+    }
+  }
+}
+function atualizarBarraHP(hp){
+  const bar=document.getElementById("hp-bar");
+  const label=document.getElementById("hp-label");
+  const percent=Math.max(0,Math.min(100,hp));
+  bar.style.width=percent+"%";
+  bar.style.background=hp<30?"linear-gradient(90deg,#ff4d4d,#b30000)":"linear-gradient(90deg,#3fb950,#2ea043)";
+  label.textContent=`${hp} / 100`;
+}
+function logExploracao(tipo,msg){
+  const log=document.getElementById("log-exploracao");
+  const div=document.createElement("div");
+  div.classList.add("log-item",tipo);
+  div.textContent=msg;
+  log.prepend(div);
+}
+async function atualizarHP(){
+  const res = await fetch(`/personagem/hp/${personagemId}`);
+  const data = await res.json();
+  atualizarBarraHP(data.hp ?? 100);
+  document.getElementById("nivel").innerText = data.nivel ?? 1;
+  posX = data.pos_x ?? 0; posY = data.pos_y ?? 0;
+  mapa[posY][posX] = true;
+  desenharMapa();
+  document.getElementById("pos").innerText = `Posição: (${posX}, ${posY})`;
+}
 
-    <div id="botoes">
-      <button class="attack" onclick="acao('atacar')">⚔️ Atacar</button>
-      <button class="block" onclick="acao('bloquear')">🛡️ Bloquear</button>
-      <button class="heal" onclick="acao('curar')">💊 Curar</button>
-    </div>
+async function atualizarInventario(){
+  const res=await fetch(`/inventario/${personagemId}`);
+  const itens=await res.json();
+  const lista=document.getElementById("itens");
+  lista.innerHTML="";
+  itens.forEach(it=>{
+    const li=document.createElement("li");
+    li.textContent=`${it.nome} (${it.tipo}) — ${it.quantidade}`;
+    lista.appendChild(li);
+  });
+}
+async function explorar(direcao){
+  if(emBatalha){alert("Você está em batalha!");return;}
+  const res=await fetch("/explorar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({personagemId,direcao})});
+  const data=await res.json();
+  if(data.erro){alert(data.erro);return;}
+  document.getElementById("resultado").innerText=data.resultado;
+  posX=Math.max(0,Math.min(4,data.pos_x));
+  posY=Math.max(0,Math.min(4,data.pos_y));
+  mapa[posY][posX]=true;
+  desenharMapa();
+  document.getElementById("pos").innerText=`Posição: (${posX}, ${posY})`;
 
-    <div id="log"></div>
-
-    <script src="script.js"></script>
-  </body>
+  const notaExploracao=Math.floor(Math.random()*100)+1;
+  if(data.tipo_evento==="monstro"){
+    logExploracao("monstro",`👹 Encontrou um monstro! (Dificuldade estimada: ${notaExploracao}%)`);
+    iniciarBatalha(data.session_id);
+  }else if(data.tipo_evento==="item"){
+    logExploracao("item",`🎁 Encontrou um item misterioso! (Qualidade: ${notaExploracao}%)`);
+    atualizarInventario();
+  }else{
+    logExploracao("nada",`🔍 Área explorada, nada encontrado. (Nota de exploração: ${notaExploracao}%)`);
+  }
+  const hpRes=await fetch(`/personagem/hp/${personagemId}`); 
+  const hpData=await hpRes.json();
+  atualizarBarraHP(hpData.hp);
+}
+function iniciarBatalha(id){
+  sessionId=id;emBatalha=true;
+  document.getElementById("batalha").style.display="block";
+  document.getElementById("resultado").style.display="none";
+  document.getElementById("log").innerText="👹 Um monstro apareceu!";
+  document.getElementById("batalha-hp").innerText="HP Jogador: 100 | HP Monstro: 100";
+}
+async function turno(acao){
+  const res=await fetch("/batalha/turno",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId,acao})});
+  const data=await res.json();
+  if(data.erro){alert(data.erro);return;}
+  document.getElementById("batalha-hp").innerText=`HP Jogador: ${data.hp_personagem} | HP Monstro: ${data.hp_monstro}`;
+  document.getElementById("log").innerText=data.evento;
+  atualizarBarraHP(data.hp_personagem);
+  if(data.hp_personagem<=0){
+    alert("💀 Você foi derrotado! Reiniciando...");
+    await fetch(`/personagem/reset/${personagemId}`,{method:"POST"});
+    emBatalha=false;location.reload();
+  }else if(data.hp_monstro<=0){
+    alert("🏆 Você venceu!");
+    emBatalha=false;
+    document.getElementById("batalha").style.display="none";
+    document.getElementById("resultado").style.display="block";
+    atualizarInventario();atualizarHP();
+  }
+}
+atualizarHP();atualizarInventario();
+</script>
+</body>
 </html>

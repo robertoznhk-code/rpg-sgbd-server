@@ -1,0 +1,45 @@
+flowchart TD
+    A[Inicio do Jogo] --> B[Nova Sessao]
+    B -->|"INSERT INTO sessoes (100/100)"| C{Sessao Criada}
+    C --> D[Jogador executa acao]
+    D -->|"CALL realizar_acao_por_sessao(session_id, acao)"| E[Procedure realiza acao]
+
+    subgraph E1[realizar_acao_por_sessao]
+        E --> F[SELECT hp_personagem, hp_monstro FROM sessoes]
+        F --> G{Tipo de acao}
+        G -->|atacar| H1[Dano = RAND()*20 + 10]
+        G -->|bloquear| H2[Sem dano]
+        G -->|curar| H3[HP + RAND()*15 + 5]
+        H1 --> I
+        H2 --> I
+        H3 --> I
+
+        I{Monstro ainda vivo?}
+        I -->|Sim| J[Monstro contra-ataca RAND()*18 + 12]
+        I -->|Nao| K[Vitoria do jogador]
+
+        J --> L{HP jogador <= 0 ?}
+        L -->|Sim| M[Derrota do jogador]
+        L -->|Nao| N[Atualiza HPs em sessoes]
+
+        K --> N
+        M --> N
+
+        N --> O{HP <= 0 de alguem?}
+        O -->|Sim| P[Reinicia HPs (100/100)]
+        O -->|Nao| Q[Continua batalha]
+
+        P --> R[SELECT resultado e HPs]
+        Q --> R
+    end
+
+    R --> S{Front-End exibe resultado}
+    S -->|Vitoria| T1[Reiniciar Batalha]
+    S -->|Derrota| T2[Reiniciar Batalha]
+    S -->|Continua| D
+
+    P --> U[INSERT INTO batalhas]
+    U --> V[VIEW ranking_monstros]
+
+    X[CALL simular_batalhas(N)] --> Y[Executa N batalhas com realizar_batalha()]
+    Y --> U

@@ -1,8 +1,33 @@
+# ==========================
+# ⚙️ Dependências e builds
+# ==========================
 node_modules/
-.env
-.env.*
 dist/
 build/
+
+# ==========================
+# 🔐 Credenciais e certificados
+# ==========================
+.env
+.env.*
+cert/
+*.pem
+*.key
+*.crt
+
+# ==========================
+# 🧩 Logs e backups
+# ==========================
 logs/
 npm-debug.log*
 yarn-debug.log*
+backup.js
+*.sql
+
+# ==========================
+# 💻 Sistema operacional / IDE
+# ==========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

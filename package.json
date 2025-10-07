@@ -4,7 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "backup": "node backup.js"
+
   },
   "dependencies": {
     "cors": "^2.8.5",
