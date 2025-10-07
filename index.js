@@ -52,10 +52,12 @@ app.post("/nova-sessao", async (req, res) => {
 // =====================
 app.post("/acao", async (req, res) => {
   const { sessionId, acao } = req.body;
-  if (!sessionId) return res.status(400).json({ sucesso: false, erro: "Sessão inválida." });
+  if (!sessionId) {
+    return res.status(400).json({ sucesso: false, erro: "Sessão inválida." });
+  }
 
   try {
-    // Ação do jogador
+    // Executa a ação do jogador
     const [resultadoJogador] = await pool.query(
       "CALL realizar_acao_por_sessao(?, ?)",
       [sessionId, acao]
@@ -70,21 +72,32 @@ app.post("/acao", async (req, res) => {
       [sessionId, acaoMonstro]
     );
 
-    const jogador = resultadoJogador[0][0];
-    const monstro = resultadoMonstro[0][0];
+    // 🧠 Ajuste para evitar undefined
+    const jogadorData = resultadoJogador?.[0]?.[0] || {};
+    const monstroData = resultadoMonstro?.[0]?.[0] || {};
+
+    const jogadorMsg =
+      jogadorData.mensagem ||
+      jogadorData.resultado ||
+      `Você executou ${acao}.`;
+
+    const monstroMsg =
+      monstroData.mensagem ||
+      monstroData.resultado ||
+      `O monstro executou ${acaoMonstro}.`;
 
     res.json({
       sucesso: true,
-      jogador: `Você usou **${acao}** — ${jogador.resultado || "ação executada"}`,
-      monstro: `O monstro usou **${acaoMonstro}** — ${monstro.resultado || "ação executada"}`,
-      hp_personagem: jogador.hp_personagem,
-      hp_monstro: jogador.hp_monstro,
+      jogador: jogadorMsg,
+      monstro: monstroMsg,
+      hp_personagem: jogadorData.hp_personagem ?? 100,
+      hp_monstro: jogadorData.hp_monstro ?? 100,
     });
-
   } catch (erro) {
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
+
 
 
 // =====================
