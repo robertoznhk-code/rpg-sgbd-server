@@ -2,6 +2,14 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, "public")));
+
 
 dotenv.config();
 
@@ -65,6 +73,40 @@ app.get("/batalha", async (req, res) => {
     res.status(500).json({ erro: erro.message });
   }
 });
+
+app.use(express.json());
+
+app.post("/acao", async (req, res) => {
+  const { acao } = req.body;
+  let mensagem = "";
+  let dano = Math.floor(Math.random() * 15) + 5; // dano aleatório entre 5 e 20
+
+  switch (acao) {
+    case "atacar":
+      mensagem = `Você atacou e causou ${dano} de dano!`;
+      break;
+    case "bloquear":
+      mensagem = `Você bloqueou o ataque inimigo e reduziu o dano em ${Math.floor(Math.random() * 10)}!`;
+      break;
+    case "curar":
+      mensagem = `Você se curou em ${Math.floor(Math.random() * 12) + 3} pontos de vida!`;
+      break;
+    default:
+      mensagem = "Ação desconhecida.";
+  }
+
+  // Simulação do ataque do monstro
+  const respostaInimigo = Math.random() < 0.7
+    ? `O monstro contra-atacou e causou ${Math.floor(Math.random() * 10) + 3} de dano!`
+    : `O monstro errou o ataque!`;
+
+  res.json({
+    sucesso: true,
+    jogador: mensagem,
+    inimigo: respostaInimigo,
+  });
+});
+
 
 // =====================
 // 🚀 INICIAR SERVIDOR

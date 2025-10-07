@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>RPG SGBD - Batalha</title>
+  <style>
+    body {
+      font-family: "Courier New", monospace;
+      background: #1b1b1b;
+      color: #eee;
+      text-align: center;
+      padding: 40px;
+    }
+    #log {
+      margin: 30px auto;
+      padding: 20px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 10px;
+      width: 600px;
+      height: 300px;
+      overflow-y: auto;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #444;
+      color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #666; }
+  </style>
+</head>
+<body>
+  <h1>⚔️ RPG-SGBD - Batalha em Tempo Real</h1>
+  <div id="log"></div>
+  <div>
+    <button onclick="enviarAcao('atacar')">⚔️ Atacar</button>
+    <button onclick="enviarAcao('bloquear')">🛡️ Bloquear</button>
+    <button onclick="enviarAcao('curar')">💊 Curar</button>
+  </div>
+
+  <script>
+    const logDiv = document.getElementById("log");
+
+    async function enviarAcao(acao) {
+      const resposta = await fetch("/acao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao }),
+      });
+
+      const dados = await resposta.json();
+      if (dados.sucesso) {
+        adicionarLog(`👤 ${dados.jogador}`);
+        adicionarLog(`👹 ${dados.inimigo}`);
+      } else {
+        adicionarLog("❌ Erro na batalha!");
+      }
+    }
+
+    function adicionarLog(texto) {
+      const linha = document.createElement("div");
+      linha.textContent = texto;
+      logDiv.appendChild(linha);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+  </script>
+</body>
+</html>
