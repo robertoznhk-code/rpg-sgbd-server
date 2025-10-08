@@ -12,64 +12,36 @@
       --accent-glow: 0 0 15px #00b4d8aa;
       --text: #f8f9fa;
       --muted: #9da3b0;
-      --danger: #ff4d6d;
     }
-    * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins",sans-serif; }
-    body {
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; display:flex; align-items:center; justify-content:center; overflow:hidden;
-    }
-    h1 { font-size: 2rem; margin-bottom: .5rem; text-shadow: var(--accent-glow); }
-    #game-container {
-      display:flex; flex-direction:column; width:92%; max-width:1000px; height:92vh;
-      background:var(--glass); border:1px solid rgba(255,255,255,.12); border-radius:20px;
-      backdrop-filter: blur(10px); box-shadow:0 0 30px rgba(0,0,0,.6); padding:16px 22px;
-    }
-    #top {
-      display:flex; gap:18px; align-items:flex-start; justify-content:space-between;
-    }
-    .panel {
-      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-      border-radius:14px; padding:12px 14px;
-    }
-    #statusBox { flex:2; }
-    #mapBox { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; }
-    #hp-bars { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:8px; }
-    .hpwrap { width:100%; }
-    .hplabel { display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:6px; }
-    .hpbar { width:100%; height:20px; background:#333; border-radius:10px; overflow:hidden; }
-    .hpfill { height:100%; width:100%; background:linear-gradient(90deg, #00ff87, #60efff); transition: width .35s; }
-    .hpfill.monstro { background: linear-gradient(90deg, #ff8fa3, #ffccd5); }
-    #map-grid {
-      display:grid; grid-template-columns: repeat(5, 22px); grid-template-rows:repeat(5, 22px);
-      gap:5px; justify-content:center;
-    }
-    .map-cell { width:22px; height:22px; background:rgba(255,255,255,.1); border-radius:4px; }
-    .visited { background: rgba(0, 180, 216, .35); }
-    .player { background: var(--accent); box-shadow: var(--accent-glow); }
-    #movement {
-      display:grid; grid-template-columns:80px 80px 80px; grid-template-rows:80px 80px 80px;
-      gap:10px; justify-content:center; align-items:center; margin: 14px 0;
-    }
-    #movement button, #actions button {
-      border:none; border-radius:12px; background:var(--accent); color:#000; font-weight:700; cursor:pointer;
-      transition: all .2s; box-shadow: var(--accent-glow);
-    }
-    #movement button { width:80px; height:80px; font-size:1.5rem; }
-    #movement button:hover, #actions button:hover { background:#00e1ff; transform: scale(1.07); }
-    #movement div { width:80px; height:80px; visibility:hidden; }
-    #actions { display:flex; gap:12px; }
-    #actions button { padding:.8rem 1.3rem; font-size:1rem; }
-    #infoRow { display:flex; gap:18px; margin-top:8px; }
-    #battleInfo { flex:1; }
-    #inventory { flex:1; }
-    #log { margin-top:12px; background:rgba(0,0,0,.5); width:100%; height:180px; overflow-y:auto; padding:10px; border-radius:10px; font-size:.92rem; color:var(--muted); }
-    @media (max-width: 720px) {
-      #top { flex-direction:column; }
-      #hp-bars { grid-template-columns: 1fr; }
-      #movement button, #movement div { width:60px; height:60px; }
-      #map-grid { grid-template-columns: repeat(5, 18px); grid-template-rows:repeat(5, 18px); gap:4px; }
-    }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",sans-serif;}
+    body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    h1{font-size:2rem;margin-bottom:.5rem;text-shadow:var(--accent-glow);}
+    #game-container{display:flex;flex-direction:column;width:92%;max-width:1000px;height:92vh;background:var(--glass);border:1px solid rgba(255,255,255,.12);border-radius:20px;backdrop-filter: blur(10px);box-shadow:0 0 30px rgba(0,0,0,.6);padding:16px 22px;}
+    #top{display:flex;gap:18px;align-items:flex-start;justify-content:space-between;}
+    .panel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;}
+    #statusBox{flex:2;}
+    #mapBox{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;}
+    #hp-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;}
+    .hpwrap{width:100%;}
+    .hplabel{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted);margin-bottom:6px;}
+    .hpbar{width:100%;height:20px;background:#333;border-radius:10px;overflow:hidden;}
+    .hpfill{height:100%;width:100%;background:linear-gradient(90deg, #00ff87, #60efff);transition:width .35s;}
+    .hpfill.monstro{background:linear-gradient(90deg,#ff8fa3,#ffccd5);}
+    #map-grid{display:grid;grid-template-columns:repeat(5,22px);grid-template-rows:repeat(5,22px);gap:5px;justify-content:center;}
+    .map-cell{width:22px;height:22px;background:rgba(255,255,255,.1);border-radius:4px;}
+    .visited{background:rgba(0,180,216,.35);}
+    .player{background:var(--accent);box-shadow:var(--accent-glow);}
+    #movement{display:grid;grid-template-columns:80px 80px 80px;grid-template-rows:80px 80px 80px;gap:10px;justify-content:center;align-items:center;margin:14px 0;}
+    #movement button,#actions button{border:none;border-radius:12px;background:var(--accent);color:#000;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:var(--accent-glow);}
+    #movement button{width:80px;height:80px;font-size:1.5rem;}
+    #movement button:hover,#actions button:hover{background:#00e1ff;transform:scale(1.07);}
+    #movement div{width:80px;height:80px;visibility:hidden;}
+    #actions{display:flex;gap:12px;}
+    #actions button{padding:.8rem 1.3rem;font-size:1rem;}
+    #infoRow{display:flex;gap:18px;margin-top:8px;}
+    #battleInfo{flex:1;} #inventory{flex:1;}
+    #log{margin-top:12px;background:rgba(0,0,0,.5);width:100%;height:180px;overflow-y:auto;padding:10px;border-radius:10px;font-size:.92rem;color:var(--muted);}
+    @media (max-width:720px){#top{flex-direction:column;}#hp-bars{grid-template-columns:1fr;}#movement button,#movement div{width:60px;height:60px;}#map-grid{grid-template-columns:repeat(5,18px);grid-template-rows:repeat(5,18px);gap:4px;}}
   </style>
 </head>
 <body>
@@ -85,8 +57,8 @@
             <div class="hpbar"><div id="hpPlayerFill" class="hpfill"></div></div>
           </div>
           <div class="hpwrap">
-            <div class="hplabel"><span>HP Monstro</span><span id="hpMonsterText">100 / 100</span></div>
-            <div class="hpbar"><div id="hpMonsterFill" class="hpfill monstro"></div></div>
+            <div class="hplabel"><span>HP Monstro</span><span id="hpMonsterText">*sem monstro*</span></div>
+            <div class="hpbar"><div id="hpMonsterFill" class="hpfill monstro" style="width:0%"></div></div>
           </div>
         </div>
       </div>
@@ -99,12 +71,8 @@
 
     <!-- Direções -->
     <div id="movement">
-      <div></div>
-      <button id="btnUp">↑</button>
-      <div></div>
-      <button id="btnLeft">←</button>
-      <button id="btnDown">↓</button>
-      <button id="btnRight">→</button>
+      <div></div><button id="btnUp">↑</button><div></div>
+      <button id="btnLeft">←</button><button id="btnDown">↓</button><button id="btnRight">→</button>
       <div></div><div></div><div></div>
     </div>
 
@@ -117,14 +85,8 @@
     </div>
 
     <div id="infoRow">
-      <div id="battleInfo" class="panel">
-        <strong>Ambiente</strong>
-        <div id="ambient">—</div>
-      </div>
-      <div id="inventory" class="panel">
-        <strong>Inventário</strong>
-        <ul id="invList" style="margin-top:6px;"></ul>
-      </div>
+      <div id="battleInfo" class="panel"><strong>Ambiente</strong><div id="ambient">—</div></div>
+      <div id="inventory" class="panel"><strong>Inventário</strong><ul id="invList" style="margin-top:6px;"></ul></div>
     </div>
 
     <div id="log" class="panel">📜 Aguardando ações…</div>
@@ -163,11 +125,21 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    function setHPBars(hpP, hpM) {
-      hpPF.style.width = `${Math.max(0, Math.min(100, hpP))}%`;
-      hpMF.style.width = `${Math.max(0, Math.min(100, hpM))}%`;
-      hpPT.textContent = `${hpP} / 100`;
-      hpMT.textContent = `${hpM} / 100`;
+    function setHPBars(hpP, hpM, emBatalha) {
+      // Jogador
+      const vP = Math.max(0, Math.min(100, Number(hpP ?? 0)));
+      hpPF.style.width = `${vP}%`;
+      hpPT.textContent = `${vP} / 100`;
+
+      // Monstro: quando não houver batalha, mostrar "*sem monstro*" e barra zerada
+      if (!emBatalha || hpM === null || hpM === undefined) {
+        hpMF.style.width = "0%";
+        hpMT.textContent = "*sem monstro*";
+      } else {
+        const vM = Math.max(0, Math.min(100, Number(hpM)));
+        hpMF.style.width = `${vM}%`;
+        hpMT.textContent = `${vM} / 100`;
+      }
     }
 
     // ----- Mini-mapa -----
@@ -209,10 +181,10 @@
       const res = await apiFetch(`/status?session_id=${sessionId}`);
       const data = await res.json();
       if (data.sucesso) {
-        setHPBars(data.hp_personagem, data.hp_monstro);
         battleFlag.textContent = `Em batalha: ${data.em_batalha ? "Sim" : "Não"}`;
         posX = data.pos_x; posY = data.pos_y;
         updateMap();
+        setHPBars(data.hp_personagem, data.hp_monstro, data.em_batalha);
       }
     }
 
@@ -243,16 +215,16 @@
         posX = data.pos_x ?? posX;
         posY = data.pos_y ?? posY;
         updateMap();
-        ambient.textContent = data.descricao || "—";
-        log(`➡️ ${data.descricao}`);
-        if (data.loot) {
-          await carregarInventario();
-        }
-        if (data.monstro) {
-          await atualizarStatus(); // hp_monstro volta a 100
-        }
+        if (data.em_batalha) battleFlag.textContent = "Em batalha: Sim";
+        const desc = data.descricao || "—";
+        document.getElementById("ambient").textContent = desc;
+        log(`➡️ ${desc}`);
+        if (data.loot) await carregarInventario();
+        await atualizarStatus(); // garante atualização do HP do monstro ao spawn
       } else {
-        log(`❌ ${data.erro}`);
+        // Aqui cai, por exemplo, quando tentar se mover durante batalha
+        log(`⛔ ${data.erro}`);
+        await atualizarStatus();
       }
     }
 
@@ -267,8 +239,8 @@
       if (data.sucesso) {
         if (data.jogador) log(`🧙 ${data.jogador}`);
         if (data.monstro) log(`👹 ${data.monstro}`);
-        setHPBars(data.hp_personagem, data.hp_monstro);
         battleFlag.textContent = `Em batalha: ${data.em_batalha ? "Sim" : "Não"}`;
+        setHPBars(data.hp_personagem, data.hp_monstro, data.em_batalha);
         await carregarInventario();
       } else {
         log(`❌ ${data.erro}`);

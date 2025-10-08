@@ -52,14 +52,9 @@ testDB();
 // =====================
 // 🗺️ ESTADO VOLÁTIL POR SESSÃO
 // =====================
-/**
- * posicoes: Map<sessionId, { x:0..4, y:0..4 }>
- * batalha:  Map<sessionId, { emBatalha:boolean }>
- * inventario: Map<sessionId, Map<item, qtd>>
- */
-const posicoes = new Map();
-const batalha = new Map();
-const inventarios = new Map();
+const posicoes = new Map();           // Map<sessionId, { x, y }>
+const batalha = new Map();            // Map<sessionId, { emBatalha:boolean }>
+const inventarios = new Map();        // Map<sessionId, Map<item, qtd>>
 
 function getInv(sessionId) {
   if (!inventarios.has(sessionId)) inventarios.set(sessionId, new Map());
@@ -98,12 +93,13 @@ app.post("/nova-sessao", async (_req, res) => {
   try {
     const sessionId = uuidv4();
     await pool.query(
-      "INSERT INTO sessoes (session_id, hp_personagem, hp_monstro) VALUES (?, 100, 100);",
+      "INSERT INTO sessoes (session_id, hp_personagem, hp_monstro) VALUES (?, 100, 0);",
+      // hp_monstro inicia 0 (sem monstro)
       [sessionId]
     );
     posicoes.set(sessionId, { x: 0, y: 0 });
     batalha.set(sessionId, { emBatalha: false });
-    inventarios.set(sessionId, new Map([["Poção de Cura", 1]])); // começa com 1 poção
+    inventarios.set(sessionId, new Map([["Poção de Cura", 1]]));
     console.log(`🆕 Sessão criada: ${sessionId}`);
     res.json({ sucesso: true, sessionId });
   } catch (erro) {
@@ -113,6 +109,7 @@ app.post("/nova-sessao", async (_req, res) => {
 });
 
 // 🔹 Status atual (HPs + batalha + pos)
+//    -> quando NÃO estiver em batalha: hp_monstro = null (para o front exibir "*sem monstro*")
 app.get("/status", async (req, res) => {
   const { session_id } = req.query;
   if (!session_id) return res.json({ sucesso: false, erro: "session_id ausente" });
@@ -130,7 +127,7 @@ app.get("/status", async (req, res) => {
     res.json({
       sucesso: true,
       hp_personagem: Number(sess.hp_personagem),
-      hp_monstro: Number(sess.hp_monstro),
+      hp_monstro: bat.emBatalha ? Number(sess.hp_monstro) : null, // <<< aqui!
       em_batalha: bat.emBatalha,
       pos_x: pos.x,
       pos_y: pos.y,
@@ -150,6 +147,7 @@ app.get("/inventario", (req, res) => {
 });
 
 // 🔹 Explorar (spawn de monstro e loot simples)
+//    -> se estiver em batalha, BLOQUEIA movimentação
 app.get("/explorar", async (req, res) => {
   try {
     const { session_id, direcao } = req.query;
@@ -162,6 +160,16 @@ app.get("/explorar", async (req, res) => {
     );
     if (!sess) return res.json({ sucesso: false, erro: "Sessão não encontrada." });
 
+    const bat = batalha.get(session_id) || { emBatalha: false };
+    if (bat.emBatalha) {
+      return res.json({
+        sucesso: false,
+        erro: "Você está em batalha e não pode se mover!",
+        em_batalha: true,
+      });
+    }
+
+    // mover
     const p = posicoes.get(session_id) || { x: 0, y: 0 };
     if (direcao === "up") p.y = Math.max(0, p.y - 1);
     if (direcao === "down") p.y = Math.min(4, p.y + 1);
@@ -182,7 +190,7 @@ app.get("/explorar", async (req, res) => {
         "UPDATE sessoes SET hp_monstro = 100 WHERE session_id = ?",
         [session_id]
       );
-      descricao = "👹 Um monstro apareceu!";
+      descricao = "👹 Um monstro apareceu! Você não pode fugir.";
     } else if (r < 0.60) {
       addItem(session_id, "Poção de Cura", 1);
       loot = { item: "Poção de Cura", quantidade: 1 };
@@ -198,6 +206,7 @@ app.get("/explorar", async (req, res) => {
       descricao,
       monstro,
       loot,
+      em_batalha: batalha.get(session_id)?.emBatalha || false,
     });
   } catch (erro) {
     console.error("❌ /explorar:", erro.message);
@@ -205,7 +214,9 @@ app.get("/explorar", async (req, res) => {
   }
 });
 
-// 🔹 Ações de batalha (usa tabela `sessoes`; inventário volátil)
+// 🔹 Ações de batalha
+//    -> ao vencer: emBatalha = false e hp_monstro volta a 0
+//    -> ao morrer: reseta sessão e emBatalha = false
 app.post("/acao", async (req, res) => {
   const { sessionId, acao } = req.body;
 
@@ -222,12 +233,12 @@ app.post("/acao", async (req, res) => {
 
     const bat = batalha.get(sessionId) || { emBatalha: false };
     let hpPersonagem = Number(sessao.hp_personagem) || 100;
-    let hpMonstro = Number(sessao.hp_monstro) || 100;
+    let hpMonstro = Number(sessao.hp_monstro) || 0;
     let resultadoJogador = "";
     let resultadoMonstro = "";
 
     if (!bat.emBatalha && acao !== "curar") {
-      // só permitir ação de combate se houver monstro
+      // só permitir atacar/bloquear se houver monstro
       return res.json({ sucesso: false, erro: "Nenhum monstro para lutar no momento." });
     }
 
@@ -241,7 +252,6 @@ app.post("/acao", async (req, res) => {
       resultadoJogador = "Você se defendeu e reduziu o dano inimigo!";
       hpPersonagem = Math.max(0, hpPersonagem - Math.floor(danoMonstro / 3));
     } else if (acao === "curar") {
-      // Cura total usando Poção de Cura
       const ok = consumeItem(sessionId, "Poção de Cura", 1);
       if (!ok) {
         resultadoJogador = "Você tentou usar uma poção, mas não possui nenhuma.";
@@ -266,23 +276,22 @@ app.post("/acao", async (req, res) => {
       } else {
         resultadoMonstro = "O monstro bloqueou parte do dano!";
       }
-    } else if (hpMonstro <= 0) {
+    } else if (hpMonstro <= 0 && bat.emBatalha) {
       resultadoMonstro = "O monstro foi derrotado! 🏆";
     }
 
     // Vitória/derrota
-    if (hpMonstro <= 0) {
+    if (hpMonstro <= 0 && bat.emBatalha) {
       batalha.set(sessionId, { emBatalha: false });
-      // Recompensa simples: 1–2 poções
+      await pool.query("UPDATE sessoes SET hp_monstro = 0 WHERE session_id = ?", [sessionId]);
       const drop = Math.floor(Math.random() * 2) + 1;
       addItem(sessionId, "Poção de Cura", drop);
       resultadoJogador += ` Você venceu a batalha e ganhou ${drop} poç${drop === 1 ? "ão" : "ões"}!`;
     }
     if (hpPersonagem <= 0) {
-      // Derrota: zera batalha e reseta sessão
       batalha.set(sessionId, { emBatalha: false });
       hpPersonagem = 100;
-      hpMonstro = 100;
+      hpMonstro = 0;
       posicoes.set(sessionId, { x: 0, y: 0 });
       inventarios.set(sessionId, new Map([["Poção de Cura", 1]]));
       resultadoJogador += " 💀 Você foi derrotado e retorna ao início.";
@@ -298,8 +307,8 @@ app.post("/acao", async (req, res) => {
       jogador: resultadoJogador,
       monstro: resultadoMonstro,
       hp_personagem: hpPersonagem,
-      hp_monstro: hpMonstro,
-      em_batalha: (batalha.get(sessionId) || {}).emBatalha || false,
+      hp_monstro: batalha.get(sessionId)?.emBatalha ? hpMonstro : null, // <<< null fora de batalha
+      em_batalha: batalha.get(sessionId)?.emBatalha || false,
     });
   } catch (erro) {
     console.error("❌ /acao:", erro.message);
