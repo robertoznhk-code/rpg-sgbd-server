@@ -71,7 +71,6 @@
       transition: width 0.4s ease-in-out;
     }
 
-    /* ======= DIREÇÕES EM FORMATO DE TECLADO ======= */
     #movement {
       display: grid;
       grid-template-columns: 80px 80px 80px;
@@ -101,14 +100,12 @@
       transform: scale(1.1);
     }
 
-    /* Células invisíveis que mantêm o layout */
     #movement div {
       width: 80px;
       height: 80px;
       visibility: hidden;
     }
 
-    /* ======= AÇÕES ======= */
     #actions {
       display: flex;
       gap: 15px;
@@ -206,11 +203,69 @@
   <footer>© 2025 RPG-SGBD | Projeto acadêmico de Roberto Mendes</footer>
 
   <script>
-    // Exemplo de animação da barra de HP
-    function updateHPBar(value) {
-      document.getElementById("hp-fill").style.width = value + "%";
+    const logDiv = document.getElementById("log");
+    const hpFill = document.getElementById("hp-fill");
+    const statusDiv = document.getElementById("status");
+    let sessionId = null;
+
+    async function novaSessao() {
+      const res = await fetch("/nova-sessao", { method: "POST" });
+      const data = await res.json();
+      if (data.sucesso) {
+        sessionId = data.sessionId;
+        log("Nova sessão iniciada!");
+      } else {
+        log("❌ Erro ao iniciar sessão.");
+      }
     }
-    updateHPBar(100);
+
+    function log(texto) {
+      logDiv.innerHTML += `<div>${texto}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    async function explorar(direcao) {
+      if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
+      const res = await fetch(`/explorar?session_id=${sessionId}&direcao=${direcao}`);
+      const data = await res.json();
+      if (data.sucesso) {
+        statusDiv.textContent = `Posição: (${data.pos_x}, ${data.pos_y})`;
+        log(`➡️ ${data.descricao}`);
+      } else {
+        log(`❌ ${data.erro}`);
+      }
+    }
+
+    async function acao(tipo) {
+      if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
+      const res = await fetch("/acao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          personagemId: 1,
+          acao: tipo,
+        }),
+      });
+      const data = await res.json();
+      if (data.sucesso) {
+        log(`🧙 ${data.jogador}`);
+        log(`👹 ${data.monstro}`);
+        hpFill.style.width = `${data.hp_personagem}%`;
+      } else {
+        log(`❌ ${data.erro}`);
+      }
+    }
+
+    document.getElementById("btnUp").onclick = () => explorar("up");
+    document.getElementById("btnDown").onclick = () => explorar("down");
+    document.getElementById("btnLeft").onclick = () => explorar("left");
+    document.getElementById("btnRight").onclick = () => explorar("right");
+
+    document.getElementById("btnAttack").onclick = () => acao("atacar");
+    document.getElementById("btnHeal").onclick = () => acao("curar");
+
+    novaSessao();
   </script>
 </body>
 </html>
