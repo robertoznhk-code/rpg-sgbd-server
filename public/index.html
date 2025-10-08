@@ -55,8 +55,15 @@
       transition: all 0.3s ease-in-out;
     }
 
-    #hp-bar {
+    #top-panel {
       width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #hp-bar {
+      width: 65%;
       height: 25px;
       background: #333;
       border-radius: 12px;
@@ -69,6 +76,37 @@
       width: 100%;
       background: linear-gradient(90deg, #00ff87, #60efff);
       transition: width 0.4s ease-in-out;
+    }
+
+    /* ======= MINI MAPA ======= */
+    #map-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 25px);
+      grid-template-rows: repeat(5, 25px);
+      gap: 5px;
+      justify-content: center;
+    }
+
+    .map-cell {
+      width: 25px;
+      height: 25px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      text-align: center;
+      font-size: 0.8rem;
+      line-height: 25px;
+      color: var(--muted);
+    }
+
+    .visited {
+      background: rgba(0, 180, 216, 0.4);
+    }
+
+    .player {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      box-shadow: var(--accent-glow);
     }
 
     #movement {
@@ -167,6 +205,12 @@
         width: 60px;
         height: 60px;
       }
+
+      #map-grid {
+        grid-template-columns: repeat(5, 20px);
+        grid-template-rows: repeat(5, 20px);
+        gap: 3px;
+      }
     }
   </style>
 </head>
@@ -174,7 +218,11 @@
 <body>
   <h1>🎮 RPG-SGBD Dashboard</h1>
   <div id="game-container">
-    <div id="status">Posição: (0, 0)</div>
+    <div id="top-panel">
+      <div id="status">Posição: (0, 0)</div>
+      <div id="map-grid"></div>
+    </div>
+
     <div id="hp-bar"><div id="hp-fill"></div></div>
 
     <!-- Direções -->
@@ -206,16 +254,29 @@
     const logDiv = document.getElementById("log");
     const hpFill = document.getElementById("hp-fill");
     const statusDiv = document.getElementById("status");
+    const mapGrid = document.getElementById("map-grid");
     let sessionId = null;
+    let posX = 0, posY = 0;
 
-    async function novaSessao() {
-      const res = await fetch("/nova-sessao", { method: "POST" });
-      const data = await res.json();
-      if (data.sucesso) {
-        sessionId = data.sessionId;
-        log("Nova sessão iniciada!");
-      } else {
-        log("❌ Erro ao iniciar sessão.");
+    // Cria o mapa 5x5
+    function initMap() {
+      mapGrid.innerHTML = "";
+      for (let i = 0; i < 25; i++) {
+        const cell = document.createElement("div");
+        cell.className = "map-cell";
+        mapGrid.appendChild(cell);
+      }
+      updateMap();
+    }
+
+    function updateMap() {
+      const cells = document.querySelectorAll(".map-cell");
+      cells.forEach(c => c.className = "map-cell");
+      const index = posY * 5 + posX;
+      if (cells[index]) cells[index].classList.add("player");
+      for (let i = 0; i < cells.length; i++) {
+        if (i === index) continue;
+        cells[i].classList.add("visited");
       }
     }
 
@@ -224,12 +285,30 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
+    async function novaSessao() {
+      try {
+        const res = await fetch(window.location.origin + "/nova-sessao", { method: "POST" });
+        const data = await res.json();
+        if (data.sucesso) {
+          sessionId = data.sessionId;
+          log("✅ Nova sessão iniciada!");
+        } else {
+          log("❌ Erro ao iniciar sessão.");
+        }
+      } catch (e) {
+        log("🚫 Falha ao conectar ao servidor.");
+      }
+    }
+
     async function explorar(direcao) {
       if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
       const res = await fetch(`/explorar?session_id=${sessionId}&direcao=${direcao}`);
       const data = await res.json();
       if (data.sucesso) {
-        statusDiv.textContent = `Posição: (${data.pos_x}, ${data.pos_y})`;
+        posX = data.pos_x ?? posX;
+        posY = data.pos_y ?? posY;
+        updateMap();
+        statusDiv.textContent = `Posição: (${posX}, ${posY})`;
         log(`➡️ ${data.descricao}`);
       } else {
         log(`❌ ${data.erro}`);
@@ -241,11 +320,7 @@
       const res = await fetch("/acao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          personagemId: 1,
-          acao: tipo,
-        }),
+        body: JSON.stringify({ sessionId, personagemId: 1, acao: tipo }),
       });
       const data = await res.json();
       if (data.sucesso) {
@@ -265,6 +340,7 @@
     document.getElementById("btnAttack").onclick = () => acao("atacar");
     document.getElementById("btnHeal").onclick = () => acao("curar");
 
+    initMap();
     novaSessao();
   </script>
 </body>
