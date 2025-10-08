@@ -251,58 +251,81 @@
   <footer>© 2025 RPG-SGBD | Projeto acadêmico de Roberto Mendes</footer>
 
   <script>
-    const logDiv = document.getElementById("log");
-    const hpFill = document.getElementById("hp-fill");
-    const statusDiv = document.getElementById("status");
-    const mapGrid = document.getElementById("map-grid");
-    let sessionId = null;
-    let posX = 0, posY = 0;
+  const logDiv = document.getElementById("log");
+  const hpFill = document.getElementById("hp-fill");
+  const statusDiv = document.getElementById("status");
+  const mapGrid = document.getElementById("map-grid");
+  let sessionId = null;
+  let posX = 0, posY = 0;
 
-    // Cria o mapa 5x5
-    function initMap() {
-      mapGrid.innerHTML = "";
-      for (let i = 0; i < 25; i++) {
-        const cell = document.createElement("div");
-        cell.className = "map-cell";
-        mapGrid.appendChild(cell);
-      }
-      updateMap();
-    }
-
-    function updateMap() {
-      const cells = document.querySelectorAll(".map-cell");
-      cells.forEach(c => c.className = "map-cell");
-      const index = posY * 5 + posX;
-      if (cells[index]) cells[index].classList.add("player");
-      for (let i = 0; i < cells.length; i++) {
-        if (i === index) continue;
-        cells[i].classList.add("visited");
-      }
-    }
-
-    function log(texto) {
-      logDiv.innerHTML += `<div>${texto}</div>`;
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
-    async function novaSessao() {
+  // ---------- Helper p/ detectar API ----------
+  const BASES = [window.location.origin, "http://localhost:10000"];
+  async function apiFetch(path, options = {}) {
+    let lastErr;
+    for (const base of BASES) {
       try {
-        const res = await fetch(window.location.origin + "/nova-sessao", { method: "POST" });
-        const data = await res.json();
-        if (data.sucesso) {
-          sessionId = data.sessionId;
-          log("✅ Nova sessão iniciada!");
-        } else {
-          log("❌ Erro ao iniciar sessão.");
-        }
+        const res = await fetch(`${base}${path}`, options);
+        if (!res.ok) throw new Error(res.statusText);
+        return res;
       } catch (e) {
-        log("🚫 Falha ao conectar ao servidor.");
+        lastErr = e;
       }
     }
+    throw lastErr || new Error("Não foi possível alcançar a API.");
+  }
 
-    async function explorar(direcao) {
-      if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
-      const res = await fetch(`/explorar?session_id=${sessionId}&direcao=${direcao}`);
+  // ---------- Mapa 5x5 ----------
+  function initMap() {
+    mapGrid.innerHTML = "";
+    for (let i = 0; i < 25; i++) {
+      const cell = document.createElement("div");
+      cell.className = "map-cell";
+      mapGrid.appendChild(cell);
+    }
+    updateMap();
+  }
+
+  function updateMap() {
+    const cells = document.querySelectorAll(".map-cell");
+    cells.forEach(c => c.className = "map-cell");
+    const index = posY * 5 + posX;
+    if (cells[index]) cells[index].classList.add("player");
+    // marca visitado só como efeito visual simples
+    for (let i = 0; i < cells.length; i++) {
+      if (i === index) continue;
+      cells[i].classList.add("visited");
+    }
+  }
+
+  function log(texto) {
+    logDiv.innerHTML += `<div>${texto}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  // ---------- Sessão ----------
+  async function novaSessao() {
+    try {
+      const res = await apiFetch("/nova-sessao", { method: "POST" });
+      const data = await res.json();
+      if (data.sucesso) {
+        sessionId = data.sessionId;
+        posX = 0; posY = 0;
+        updateMap();
+        statusDiv.textContent = `Posição: (${posX}, ${posY})`;
+        log("✅ Nova sessão iniciada!");
+      } else {
+        log("❌ Erro ao iniciar sessão: " + (data.erro || "desconhecido"));
+      }
+    } catch (e) {
+      log("🚫 Falha ao conectar ao servidor: " + e.message);
+    }
+  }
+
+  // ---------- Explorar ----------
+  async function explorar(direcao) {
+    if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
+    try {
+      const res = await apiFetch(`/explorar?session_id=${sessionId}&direcao=${direcao}`);
       const data = await res.json();
       if (data.sucesso) {
         posX = data.pos_x ?? posX;
@@ -313,11 +336,16 @@
       } else {
         log(`❌ ${data.erro}`);
       }
+    } catch (e) {
+      log("🚫 Falha ao explorar: " + e.message);
     }
+  }
 
-    async function acao(tipo) {
-      if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
-      const res = await fetch("/acao", {
+  // ---------- Ações ----------
+  async function acao(tipo) {
+    if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
+    try {
+      const res = await apiFetch("/acao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, personagemId: 1, acao: tipo }),
@@ -326,22 +354,28 @@
       if (data.sucesso) {
         log(`🧙 ${data.jogador}`);
         log(`👹 ${data.monstro}`);
-        hpFill.style.width = `${data.hp_personagem}%`;
+        hpFill.style.width = `${Math.max(0, Math.min(100, data.hp_personagem))}%`;
       } else {
         log(`❌ ${data.erro}`);
       }
+    } catch (e) {
+      log("🚫 Falha na ação: " + e.message);
     }
+  }
 
-    document.getElementById("btnUp").onclick = () => explorar("up");
-    document.getElementById("btnDown").onclick = () => explorar("down");
-    document.getElementById("btnLeft").onclick = () => explorar("left");
-    document.getElementById("btnRight").onclick = () => explorar("right");
+  // Eventos dos botões
+  document.getElementById("btnUp").onclick = () => explorar("up");
+  document.getElementById("btnDown").onclick = () => explorar("down");
+  document.getElementById("btnLeft").onclick = () => explorar("left");
+  document.getElementById("btnRight").onclick = () => explorar("right");
 
-    document.getElementById("btnAttack").onclick = () => acao("atacar");
-    document.getElementById("btnHeal").onclick = () => acao("curar");
+  document.getElementById("btnAttack").onclick = () => acao("atacar");
+  document.getElementById("btnHeal").onclick = () => acao("curar");
 
-    initMap();
-    novaSessao();
-  </script>
+  // Inicializa
+  initMap();
+  novaSessao();
+</script>
+
 </body>
 </html>

@@ -1,282 +1,222 @@
+// index.js
 import express from "express";
-import mysql from "mysql2/promise";
+import cors from "cors";
 import dotenv from "dotenv";
-import fs from "fs";
+import mysql from "mysql2/promise";
+import { v4 as uuidv4 } from "uuid";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
-const app = express();
-app.use(express.json());
-app.use(express.static("public"));
 
-// 🔐 Conexão segura com Aiven (certificado em cert/ca.pem)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+// =====================
+// 🔐 CONEXÃO MYSQL (Aiven/Render compatível)
+// =====================
+function buildSSL() {
+  // Preferível: variável de ambiente com o conteúdo do CA (Render)
+  if (process.env.DB_CA_CERT && process.env.DB_CA_CERT.trim().length > 0) {
+    return { ca: process.env.DB_CA_CERT };
+  }
+  // Fallback: não rejeita (apenas para DEV/local quando não há CA)
+  return { rejectUnauthorized: false };
+}
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  password: process.env.DB_PASS || process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
-  ssl: process.env.DB_CA_CERT
-    ? { ca: process.env.DB_CA_CERT }   // modo seguro
-    : { rejectUnauthorized: false },   // fallback local
+  port: Number(process.env.DB_PORT) || 3306,
+  ssl: buildSSL(),
+  connectionLimit: 5,
 });
 
-
-// 🧩 Funções auxiliares
-async function getPotionItemId() {
-  const [rows] = await pool.query(
-    "SELECT id FROM itens WHERE tipo='poção' OR nome LIKE '%Poção%' LIMIT 1"
-  );
-  return rows[0]?.id || null;
-}
-
-async function maybeBreakItem(personagemId) {
-  if (Math.random() < 0.05) {
-    const [[item]] = await pool.query(
-      `SELECT i.item_id
-         FROM inventario i
-         JOIN itens t ON t.id = i.item_id
-        WHERE i.personagem_id = ? AND i.quantidade > 0 AND t.tipo IN ('arma','armadura')
-        ORDER BY i.item_id LIMIT 1`,
-      [personagemId]
-    );
-
-    if (item?.item_id) {
-      await pool.query(
-        "UPDATE inventario SET quantidade = GREATEST(quantidade - 1, 0) WHERE personagem_id = ? AND item_id = ?",
-        [personagemId, item.item_id]
-      );
-      return " 🔧 Um item se quebrou durante o combate!";
-    }
-  }
-  return "";
-}
-
-function poucoOuPoucas(qtd, sing, plural) {
-  return `${qtd} ${qtd === 1 ? sing : plural}`;
-}
-
-// ✅ Testa conexão
-pool
-  .getConnection()
-  .then(() => console.log("✅ Conectado ao banco com sucesso."))
-  .catch((err) => console.error("❌ Erro ao conectar no banco:", err.message));
-
-// 🧭 Explorar direção
-app.post("/explorar", async (req, res) => {
-  const { personagemId, direcao } = req.body;
+async function testDB() {
   try {
-    const [[pers]] = await pool.query(
-      "SELECT pos_x, pos_y FROM personagens WHERE id = ?",
-      [personagemId]
-    );
-    let { pos_x, pos_y } = pers || { pos_x: 0, pos_y: 0 };
-
-    if (direcao === 1) pos_y = Math.max(0, pos_y - 1);
-    else if (direcao === 2) pos_y = Math.min(4, pos_y + 1);
-    else if (direcao === 3) pos_x = Math.min(4, pos_x + 1);
-    else if (direcao === 4) pos_x = Math.max(0, pos_x - 1);
-
-    await pool.query("UPDATE personagens SET pos_x=?, pos_y=? WHERE id=?", [
-      pos_x,
-      pos_y,
-      personagemId,
-    ]);
-
-    const rand = Math.random();
-    let tipo_evento = "nada";
-    let resultado = "Nada encontrado.";
-
-    if (rand < 0.3) tipo_evento = "item";
-    else if (rand < 0.55) tipo_evento = "monstro";
-
-    if (tipo_evento === "item") {
-      const itemSorteado = Math.floor(Math.random() * 5) + 1;
-      await pool.query(
-        `INSERT INTO inventario (personagem_id, item_id, quantidade)
-         VALUES (?, ?, 1)
-         ON DUPLICATE KEY UPDATE quantidade = quantidade + 1`,
-        [personagemId, itemSorteado]
-      );
-      resultado = `🎁 Você encontrou um item misterioso (ID ${itemSorteado})!`;
-    } else if (tipo_evento === "monstro") {
-      const sessionId = Math.random().toString(36).substring(2, 10);
-      await pool.query(
-        `INSERT INTO batalhas (session_id, personagem_id, monstro_id, hp_personagem, hp_monstro)
-         VALUES (?, ?, 1, 100, 100)`,
-        [sessionId, personagemId]
-      );
-      return res.json({
-        tipo_evento,
-        resultado: "👹 Um monstro apareceu!",
-        session_id: sessionId,
-        pos_x,
-        pos_y,
-      });
-    }
-
-    res.json({ tipo_evento, resultado, pos_x, pos_y });
+    const conn = await pool.getConnection();
+    await conn.ping();
+    conn.release();
+    console.log("✅ Conectado ao banco com sucesso.");
   } catch (err) {
-    console.error("❌ Erro em /explorar:", err.message);
-    res.status(500).json({ erro: err.message });
+    console.error("❌ Falha ao conectar no banco:", err.message);
+  }
+}
+testDB();
+
+// =====================
+// 🗺️ ESTADO VOLÁTIL (posições por sessão)
+// =====================
+/**
+ * Armazena a posição do jogador por sessão:
+ * Map<sessionId, { x:number(0..4), y:number(0..4) }>
+ */
+const posicoes = new Map();
+
+// =====================
+// 🌐 ENDPOINTS
+// =====================
+
+// Health-check simples para logs e monitoramento
+app.get("/health", async (_req, res) => {
+  try {
+    const [[row]] = await pool.query("SELECT 1 AS ok");
+    res.json({ ok: true, db: row?.ok === 1 ? "up" : "unknown" });
+  } catch (e) {
+    res.status(500).json({ ok: false, db: "down", erro: e.message });
   }
 });
 
-// ❤️ HP e status
-app.get("/personagem/hp/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [[row]] = await pool.query(
-      "SELECT hp, pos_x, pos_y, nivel, ataque_base FROM personagens WHERE id=? LIMIT 1",
-      [id]
-    );
-    res.json(
-      row || { hp: 100, pos_x: 0, pos_y: 0, nivel: 1, ataque_base: 10 }
-    );
-  } catch (err) {
-    console.error("❌ Erro em /personagem/hp:", err.message);
-    res.status(500).json({ erro: err.message });
-  }
+// Página inicial (serve /public/index.html)
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 🎒 Inventário
-app.get("/inventario/:id", async (req, res) => {
-  const { id } = req.params;
+// 🔹 Nova sessão
+app.post("/nova-sessao", async (_req, res) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT i.item_id, t.nome, t.tipo, i.quantidade
-         FROM inventario i
-         JOIN itens t ON t.id = i.item_id
-        WHERE i.personagem_id = ?`,
-      [id]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error("❌ Erro em /inventario:", err.message);
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-// ⚔️ Batalha — turno
-app.post("/batalha/turno", async (req, res) => {
-  const { sessionId, acao } = req.body;
-  try {
-    const [[btl]] = await pool.query(
-      "SELECT id, personagem_id, hp_personagem, hp_monstro FROM batalhas WHERE session_id=? LIMIT 1",
+    const sessionId = uuidv4();
+    await pool.query(
+      "INSERT INTO sessoes (session_id, hp_personagem, hp_monstro) VALUES (?, 100, 100);",
       [sessionId]
     );
-    if (!btl) return res.json({ erro: "Batalha não encontrada." });
+    // posição inicial no mapa (0,0)
+    posicoes.set(sessionId, { x: 0, y: 0 });
+    console.log(`🆕 Sessão criada: ${sessionId}`);
+    res.json({ sucesso: true, sessionId });
+  } catch (erro) {
+    console.error("❌ /nova-sessao:", erro.message);
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
 
-    const [[stats]] = await pool.query(
-      "SELECT nivel, ataque_base FROM personagens WHERE id=? LIMIT 1",
-      [btl.personagem_id]
+// 🔹 Explorar direção (mantém posição em memória por sessão)
+app.get("/explorar", async (req, res) => {
+  try {
+    const { session_id, direcao } = req.query;
+    if (!session_id) {
+      return res.json({ sucesso: false, erro: "session_id ausente" });
+    }
+    // Confere se sessão existe no banco (opcional mas útil)
+    const [[sess]] = await pool.query(
+      "SELECT session_id FROM sessoes WHERE session_id = ? LIMIT 1",
+      [session_id]
     );
-    const nivel = stats?.nivel ?? 1;
-    const atkBase = stats?.ataque_base ?? 10;
+    if (!sess) {
+      return res.json({ sucesso: false, erro: "Sessão não encontrada." });
+    }
 
-    let { hp_personagem: hpP, hp_monstro: hpM } = btl;
-    let danoP = Math.floor(Math.random() * 15) + atkBase;
-    let danoM = Math.floor(Math.random() * 18) + 8;
-    let evento = "";
+    const p = posicoes.get(session_id) || { x: 0, y: 0 };
+    if (direcao === "up") p.y = Math.max(0, p.y - 1);
+    if (direcao === "down") p.y = Math.min(4, p.y + 1);
+    if (direcao === "left") p.x = Math.max(0, p.x - 1);
+    if (direcao === "right") p.x = Math.min(4, p.x + 1);
+    posicoes.set(session_id, p);
+
+    const descricoes = [
+      "Nada encontrado.",
+      "Você ouviu um sussurro distante...",
+      "O vento trouxe um cheiro de perigo.",
+      "Você encontrou pegadas antigas.",
+      "O solo aqui parece ter sido revirado recentemente.",
+    ];
+    const descricao = descricoes[Math.floor(Math.random() * descricoes.length)];
+
+    res.json({
+      sucesso: true,
+      pos_x: p.x,
+      pos_y: p.y,
+      descricao,
+    });
+  } catch (erro) {
+    console.error("❌ /explorar:", erro.message);
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// 🔹 Ação de batalha simples (usa tabela `sessoes`)
+app.post("/acao", async (req, res) => {
+  const { sessionId, acao } = req.body;
+
+  if (!sessionId || !acao) {
+    return res.status(400).json({ sucesso: false, erro: "Dados inválidos." });
+  }
+
+  try {
+    const [[sessao]] = await pool.query(
+      "SELECT * FROM sessoes WHERE session_id = ? LIMIT 1",
+      [sessionId]
+    );
+    if (!sessao) return res.json({ sucesso: false, erro: "Sessão não encontrada." });
+
+    let hpPersonagem = Number(sessao.hp_personagem) || 100;
+    let hpMonstro = Number(sessao.hp_monstro) || 100;
+    let resultadoJogador = "";
+    let resultadoMonstro = "";
+
+    const danoMonstro = Math.floor(Math.random() * 20) + 10;
 
     if (acao === "atacar") {
-      hpM = Math.max(hpM - danoP, 0);
-      evento = `⚔️ Você atacou (nível ${nivel}, ATK ${atkBase}) e causou ${danoP} de dano.`;
-      hpP = Math.max(hpP - danoM, 0);
-      evento += ` O monstro revidou com ${danoM} de dano!`;
+      const dano = Math.floor(Math.random() * 20) + 5;
+      hpMonstro = Math.max(0, hpMonstro - dano);
+      resultadoJogador = `Você atacou e causou ${dano} de dano!`;
     } else if (acao === "bloquear") {
-      danoM = Math.floor(danoM / 2);
-      hpP = Math.max(hpP - danoM, 0);
-      evento = `🛡️ Você bloqueou o ataque e recebeu apenas ${danoM} de dano.`;
+      resultadoJogador = "Você se defendeu e reduziu o dano inimigo!";
+      hpPersonagem = Math.max(0, hpPersonagem - Math.floor(danoMonstro / 3));
     } else if (acao === "curar") {
-      const potionId = await getPotionItemId();
-      if (!potionId) evento = "Nenhuma poção registrada no sistema.";
-      else {
-        const [[inv]] = await pool.query(
-          "SELECT quantidade FROM inventario WHERE personagem_id=? AND item_id=? LIMIT 1",
-          [btl.personagem_id, potionId]
-        );
-        if (inv?.quantidade > 0) {
-          const cura = 100 - hpP; // cura total
-          hpP = 100;
-          await pool.query(
-            "UPDATE inventario SET quantidade = GREATEST(quantidade - 1, 0) WHERE personagem_id=? AND item_id=?",
-            [btl.personagem_id, potionId]
-          );
-          evento =
-            cura > 0
-              ? `💊 Você usou uma poção e recuperou ${cura} de HP (cura total).`
-              : "💊 Seu HP já estava cheio — poção desperdiçada!";
-        } else evento = "Você não possui poções.";
+      // Cura total (full heal): recupera o que falta até 100
+      const cura = 100 - hpPersonagem;
+      hpPersonagem = 100;
+      resultadoJogador =
+        cura > 0
+          ? `Você usou uma poção e recuperou ${cura} de HP (cura total).`
+          : "Seu HP já estava cheio — poção desperdiçada!";
+    } else {
+      return res.json({ sucesso: false, erro: "Ação inválida." });
+    }
+
+    // Ação aleatória do monstro (se ele ainda estiver vivo)
+    if (hpMonstro > 0) {
+      const acaoMonstro = Math.random() < 0.65 ? "atacar" : "bloquear";
+      if (acaoMonstro === "atacar") {
+        hpPersonagem = Math.max(0, hpPersonagem - danoMonstro);
+        resultadoMonstro = `O monstro atacou e causou ${danoMonstro} de dano!`;
+      } else {
+        resultadoMonstro = "O monstro bloqueou parte do dano!";
       }
-    } else return res.json({ erro: "Ação inválida." });
-
-    if (acao !== "curar") evento += await maybeBreakItem(btl.personagem_id);
-
-    const venceu = hpM <= 0;
-    const perdeu = hpP <= 0;
-
-    if (venceu) {
-      const premioPocoes = Math.floor(Math.random() * 2) + 1;
-      await pool.query(
-        "UPDATE personagens SET nivel=nivel+1, ataque_base=ataque_base+2, hp=LEAST(hp+20,100) WHERE id=?",
-        [btl.personagem_id]
-      );
-      const potionId = await getPotionItemId();
-      if (potionId) {
-        await pool.query(
-          `INSERT INTO inventario (personagem_id,item_id,quantidade)
-           VALUES (?,?,?)
-           ON DUPLICATE KEY UPDATE quantidade=quantidade+VALUES(quantidade)`,
-          [btl.personagem_id, potionId, premioPocoes]
-        );
-      }
-      const [[lvl]] = await pool.query(
-        "SELECT nivel, ataque_base FROM personagens WHERE id=?",
-        [btl.personagem_id]
-      );
-      evento += ` 🏆 Você venceu! Subiu para o nível ${lvl.nivel} (ATK ${lvl.ataque_base}) e ganhou ${poucoOuPoucas(premioPocoes, "poção", "poções")}!`;
-    } else if (perdeu) evento += " 💀 Você foi derrotado...";
+    } else {
+      resultadoMonstro = "O monstro foi derrotado! 🏆";
+    }
 
     await pool.query(
-      "UPDATE batalhas SET hp_personagem=?, hp_monstro=?, ultima_acao=NOW() WHERE session_id=?",
-      [hpP, hpM, sessionId]
-    );
-    await pool.query(
-      "UPDATE personagens SET hp=? WHERE id=(SELECT personagem_id FROM batalhas WHERE session_id=?)",
-      [hpP, sessionId]
+      "UPDATE sessoes SET hp_personagem = ?, hp_monstro = ? WHERE session_id = ?",
+      [hpPersonagem, hpMonstro, sessionId]
     );
 
-    res.json({ hp_personagem: hpP, hp_monstro: hpM, evento, acabou: venceu || perdeu });
-  } catch (err) {
-    console.error("❌ Erro em /batalha/turno:", err.message);
-    res.status(500).json({ erro: err.message });
+    res.json({
+      sucesso: true,
+      jogador: resultadoJogador,
+      monstro: resultadoMonstro,
+      hp_personagem: hpPersonagem,
+      hp_monstro: hpMonstro,
+    });
+  } catch (erro) {
+    console.error("❌ /acao:", erro.message);
+    res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// 🔄 Reset completo
-app.post("/personagem/reset/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query(
-      `UPDATE personagens
-       SET hp=100, pos_x=0, pos_y=0, nivel=1, ataque_base=10
-       WHERE id=?`,
-      [id]
-    );
-    await pool.query("DELETE FROM inventario WHERE personagem_id=?", [id]);
-    await pool.query("DELETE FROM batalhas WHERE personagem_id=?", [id]);
-    console.log(`🔄 Personagem ${id} resetado.`);
-    res.json({ ok: true, msg: "Personagem reiniciado." });
-  } catch (err) {
-    console.error("❌ Erro em /personagem/reset:", err.message);
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-// 🚀 Servidor
-const PORT = process.env.PORT || 10000;
+// =====================
+// 🚀 INICIAR SERVIDOR
+// =====================
+const PORT = Number(process.env.PORT) || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor RPG-SGBD rodando em http://localhost:${PORT}`);
 });
