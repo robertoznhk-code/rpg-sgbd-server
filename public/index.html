@@ -12,218 +12,90 @@
       --accent-glow: 0 0 15px #00b4d8aa;
       --text: #f8f9fa;
       --muted: #9da3b0;
+      --danger: #ff4d6d;
     }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Poppins", sans-serif;
-    }
-
+    * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins",sans-serif; }
     body {
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display:flex; align-items:center; justify-content:center; overflow:hidden;
     }
-
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      text-shadow: var(--accent-glow);
-    }
-
+    h1 { font-size: 2rem; margin-bottom: .5rem; text-shadow: var(--accent-glow); }
     #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      width: 90%;
-      max-width: 900px;
-      height: 90vh;
-      background: var(--glass);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
-      padding: 1rem 2rem;
-      transition: all 0.3s ease-in-out;
+      display:flex; flex-direction:column; width:92%; max-width:1000px; height:92vh;
+      background:var(--glass); border:1px solid rgba(255,255,255,.12); border-radius:20px;
+      backdrop-filter: blur(10px); box-shadow:0 0 30px rgba(0,0,0,.6); padding:16px 22px;
     }
-
-    #top-panel {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    #top {
+      display:flex; gap:18px; align-items:flex-start; justify-content:space-between;
     }
-
-    #hp-bar {
-      width: 65%;
-      height: 25px;
-      background: #333;
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 10px 0 20px;
+    .panel {
+      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      border-radius:14px; padding:12px 14px;
     }
-
-    #hp-fill {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #00ff87, #60efff);
-      transition: width 0.4s ease-in-out;
-    }
-
-    /* ======= MINI MAPA ======= */
+    #statusBox { flex:2; }
+    #mapBox { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; }
+    #hp-bars { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:8px; }
+    .hpwrap { width:100%; }
+    .hplabel { display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:6px; }
+    .hpbar { width:100%; height:20px; background:#333; border-radius:10px; overflow:hidden; }
+    .hpfill { height:100%; width:100%; background:linear-gradient(90deg, #00ff87, #60efff); transition: width .35s; }
+    .hpfill.monstro { background: linear-gradient(90deg, #ff8fa3, #ffccd5); }
     #map-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 25px);
-      grid-template-rows: repeat(5, 25px);
-      gap: 5px;
-      justify-content: center;
+      display:grid; grid-template-columns: repeat(5, 22px); grid-template-rows:repeat(5, 22px);
+      gap:5px; justify-content:center;
     }
-
-    .map-cell {
-      width: 25px;
-      height: 25px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-      text-align: center;
-      font-size: 0.8rem;
-      line-height: 25px;
-      color: var(--muted);
-    }
-
-    .visited {
-      background: rgba(0, 180, 216, 0.4);
-    }
-
-    .player {
-      background: var(--accent);
-      color: #000;
-      font-weight: bold;
-      box-shadow: var(--accent-glow);
-    }
-
+    .map-cell { width:22px; height:22px; background:rgba(255,255,255,.1); border-radius:4px; }
+    .visited { background: rgba(0, 180, 216, .35); }
+    .player { background: var(--accent); box-shadow: var(--accent-glow); }
     #movement {
-      display: grid;
-      grid-template-columns: 80px 80px 80px;
-      grid-template-rows: 80px 80px 80px;
-      gap: 10px;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 20px;
+      display:grid; grid-template-columns:80px 80px 80px; grid-template-rows:80px 80px 80px;
+      gap:10px; justify-content:center; align-items:center; margin: 14px 0;
     }
-
-    #movement button {
-      width: 80px;
-      height: 80px;
-      border: none;
-      border-radius: 12px;
-      background: var(--accent);
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #000;
-      box-shadow: var(--accent-glow);
-      cursor: pointer;
-      transition: all 0.2s ease;
+    #movement button, #actions button {
+      border:none; border-radius:12px; background:var(--accent); color:#000; font-weight:700; cursor:pointer;
+      transition: all .2s; box-shadow: var(--accent-glow);
     }
-
-    #movement button:hover {
-      background: #00e1ff;
-      transform: scale(1.1);
-    }
-
-    #movement div {
-      width: 80px;
-      height: 80px;
-      visibility: hidden;
-    }
-
-    #actions {
-      display: flex;
-      gap: 15px;
-      margin: 15px 0;
-    }
-
-    #actions button {
-      padding: 0.8rem 1.5rem;
-      border: none;
-      border-radius: 10px;
-      background: var(--accent);
-      color: #000;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: var(--accent-glow);
-    }
-
-    #actions button:hover {
-      background: #00e1ff;
-      transform: scale(1.05);
-    }
-
-    #log {
-      background: rgba(0, 0, 0, 0.5);
-      width: 100%;
-      height: 200px;
-      overflow-y: auto;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      line-height: 1.5;
-      color: var(--muted);
-    }
-
-    #status {
-      width: 100%;
-      text-align: center;
-      font-weight: 600;
-      margin: 0.5rem 0;
-    }
-
-    footer {
-      margin-top: 1rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    @media (max-width: 600px) {
-      #game-container {
-        width: 95%;
-        height: 95vh;
-        padding: 1rem;
-      }
-
-      #movement button,
-      #movement div {
-        width: 60px;
-        height: 60px;
-      }
-
-      #map-grid {
-        grid-template-columns: repeat(5, 20px);
-        grid-template-rows: repeat(5, 20px);
-        gap: 3px;
-      }
+    #movement button { width:80px; height:80px; font-size:1.5rem; }
+    #movement button:hover, #actions button:hover { background:#00e1ff; transform: scale(1.07); }
+    #movement div { width:80px; height:80px; visibility:hidden; }
+    #actions { display:flex; gap:12px; }
+    #actions button { padding:.8rem 1.3rem; font-size:1rem; }
+    #infoRow { display:flex; gap:18px; margin-top:8px; }
+    #battleInfo { flex:1; }
+    #inventory { flex:1; }
+    #log { margin-top:12px; background:rgba(0,0,0,.5); width:100%; height:180px; overflow-y:auto; padding:10px; border-radius:10px; font-size:.92rem; color:var(--muted); }
+    @media (max-width: 720px) {
+      #top { flex-direction:column; }
+      #hp-bars { grid-template-columns: 1fr; }
+      #movement button, #movement div { width:60px; height:60px; }
+      #map-grid { grid-template-columns: repeat(5, 18px); grid-template-rows:repeat(5, 18px); gap:4px; }
     }
   </style>
 </head>
-
 <body>
-  <h1>🎮 RPG-SGBD Dashboard</h1>
   <div id="game-container">
-    <div id="top-panel">
-      <div id="status">Posição: (0, 0)</div>
-      <div id="map-grid"></div>
-    </div>
+    <h1>🎮 RPG-SGBD Dashboard</h1>
 
-    <div id="hp-bar"><div id="hp-fill"></div></div>
+    <div id="top">
+      <div id="statusBox" class="panel">
+        <div><strong>Status</strong> — <span id="battleFlag">Em batalha: Não</span> — <span id="pos">Posição: (0, 0)</span></div>
+        <div id="hp-bars">
+          <div class="hpwrap">
+            <div class="hplabel"><span>HP Jogador</span><span id="hpPlayerText">100 / 100</span></div>
+            <div class="hpbar"><div id="hpPlayerFill" class="hpfill"></div></div>
+          </div>
+          <div class="hpwrap">
+            <div class="hplabel"><span>HP Monstro</span><span id="hpMonsterText">100 / 100</span></div>
+            <div class="hpbar"><div id="hpMonsterFill" class="hpfill monstro"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="mapBox" class="panel">
+        <div><strong>Mini-mapa</strong></div>
+        <div id="map-grid"></div>
+      </div>
+    </div>
 
     <!-- Direções -->
     <div id="movement">
@@ -233,118 +105,159 @@
       <button id="btnLeft">←</button>
       <button id="btnDown">↓</button>
       <button id="btnRight">→</button>
-      <div></div>
-      <div></div>
-      <div></div>
+      <div></div><div></div><div></div>
     </div>
 
     <!-- Ações -->
     <div id="actions">
       <button id="btnAttack">⚔️ Atacar</button>
+      <button id="btnBlock">🛡️ Bloquear</button>
       <button id="btnHeal">💊 Curar</button>
+      <button id="btnRefresh">🔄 Atualizar Status</button>
     </div>
 
-    <!-- Log -->
-    <div id="log">📜 Aguardando ações…</div>
+    <div id="infoRow">
+      <div id="battleInfo" class="panel">
+        <strong>Ambiente</strong>
+        <div id="ambient">—</div>
+      </div>
+      <div id="inventory" class="panel">
+        <strong>Inventário</strong>
+        <ul id="invList" style="margin-top:6px;"></ul>
+      </div>
+    </div>
+
+    <div id="log" class="panel">📜 Aguardando ações…</div>
   </div>
 
-  <footer>© 2025 RPG-SGBD | Projeto acadêmico de Roberto Mendes</footer>
-
   <script>
-  const logDiv = document.getElementById("log");
-  const hpFill = document.getElementById("hp-fill");
-  const statusDiv = document.getElementById("status");
-  const mapGrid = document.getElementById("map-grid");
-  let sessionId = null;
-  let posX = 0, posY = 0;
+    const logDiv = document.getElementById("log");
+    const hpPF = document.getElementById("hpPlayerFill");
+    const hpMF = document.getElementById("hpMonsterFill");
+    const hpPT = document.getElementById("hpPlayerText");
+    const hpMT = document.getElementById("hpMonsterText");
+    const posSpan = document.getElementById("pos");
+    const ambient = document.getElementById("ambient");
+    const battleFlag = document.getElementById("battleFlag");
+    const invList = document.getElementById("invList");
+    const mapGrid = document.getElementById("map-grid");
 
-  // ---------- Helper p/ detectar API ----------
-  const BASES = [window.location.origin, "http://localhost:10000"];
-  async function apiFetch(path, options = {}) {
-    let lastErr;
-    for (const base of BASES) {
-      try {
-        const res = await fetch(`${base}${path}`, options);
-        if (!res.ok) throw new Error(res.statusText);
-        return res;
-      } catch (e) {
-        lastErr = e;
+    let sessionId = null;
+    let posX = 0, posY = 0;
+
+    const BASES = [window.location.origin, "http://localhost:10000"];
+    async function apiFetch(path, options = {}) {
+      let lastErr;
+      for (const base of BASES) {
+        try {
+          const res = await fetch(`${base}${path}`, options);
+          if (!res.ok) throw new Error(res.statusText);
+          return res;
+        } catch (e) { lastErr = e; }
+      }
+      throw lastErr || new Error("API indisponível");
+    }
+
+    function log(t) {
+      logDiv.innerHTML += `<div>${t}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function setHPBars(hpP, hpM) {
+      hpPF.style.width = `${Math.max(0, Math.min(100, hpP))}%`;
+      hpMF.style.width = `${Math.max(0, Math.min(100, hpM))}%`;
+      hpPT.textContent = `${hpP} / 100`;
+      hpMT.textContent = `${hpM} / 100`;
+    }
+
+    // ----- Mini-mapa -----
+    function initMap() {
+      mapGrid.innerHTML = "";
+      for (let i = 0; i < 25; i++) {
+        const cell = document.createElement("div");
+        cell.className = "map-cell";
+        mapGrid.appendChild(cell);
+      }
+      updateMap();
+    }
+    function updateMap() {
+      const cells = document.querySelectorAll(".map-cell");
+      cells.forEach(c => c.className = "map-cell visited");
+      const idx = posY * 5 + posX;
+      if (cells[idx]) cells[idx].classList.add("player");
+      posSpan.textContent = `Posição: (${posX}, ${posY})`;
+    }
+
+    async function carregarInventario() {
+      if (!sessionId) return;
+      const res = await apiFetch(`/inventario?session_id=${sessionId}`);
+      const data = await res.json();
+      invList.innerHTML = "";
+      if (data.sucesso && data.itens.length) {
+        data.itens.forEach(i => {
+          const li = document.createElement("li");
+          li.textContent = `• ${i.nome} — ${i.quantidade}`;
+          invList.appendChild(li);
+        });
+      } else {
+        invList.innerHTML = "<li>— vazio —</li>";
       }
     }
-    throw lastErr || new Error("Não foi possível alcançar a API.");
-  }
 
-  // ---------- Mapa 5x5 ----------
-  function initMap() {
-    mapGrid.innerHTML = "";
-    for (let i = 0; i < 25; i++) {
-      const cell = document.createElement("div");
-      cell.className = "map-cell";
-      mapGrid.appendChild(cell);
-    }
-    updateMap();
-  }
-
-  function updateMap() {
-    const cells = document.querySelectorAll(".map-cell");
-    cells.forEach(c => c.className = "map-cell");
-    const index = posY * 5 + posX;
-    if (cells[index]) cells[index].classList.add("player");
-    // marca visitado só como efeito visual simples
-    for (let i = 0; i < cells.length; i++) {
-      if (i === index) continue;
-      cells[i].classList.add("visited");
-    }
-  }
-
-  function log(texto) {
-    logDiv.innerHTML += `<div>${texto}</div>`;
-    logDiv.scrollTop = logDiv.scrollHeight;
-  }
-
-  // ---------- Sessão ----------
-  async function novaSessao() {
-    try {
-      const res = await apiFetch("/nova-sessao", { method: "POST" });
+    async function atualizarStatus() {
+      if (!sessionId) return;
+      const res = await apiFetch(`/status?session_id=${sessionId}`);
       const data = await res.json();
       if (data.sucesso) {
-        sessionId = data.sessionId;
-        posX = 0; posY = 0;
+        setHPBars(data.hp_personagem, data.hp_monstro);
+        battleFlag.textContent = `Em batalha: ${data.em_batalha ? "Sim" : "Não"}`;
+        posX = data.pos_x; posY = data.pos_y;
         updateMap();
-        statusDiv.textContent = `Posição: (${posX}, ${posY})`;
-        log("✅ Nova sessão iniciada!");
-      } else {
-        log("❌ Erro ao iniciar sessão: " + (data.erro || "desconhecido"));
       }
-    } catch (e) {
-      log("🚫 Falha ao conectar ao servidor: " + e.message);
     }
-  }
 
-  // ---------- Explorar ----------
-  async function explorar(direcao) {
-    if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
-    try {
-      const res = await apiFetch(`/explorar?session_id=${sessionId}&direcao=${direcao}`);
+    async function novaSessao() {
+      try {
+        const res = await apiFetch("/nova-sessao", { method: "POST" });
+        const data = await res.json();
+        if (data.sucesso) {
+          sessionId = data.sessionId;
+          posX = 0; posY = 0;
+          initMap();
+          await atualizarStatus();
+          await carregarInventario();
+          log("✅ Nova sessão iniciada!");
+        } else {
+          log("❌ Erro ao iniciar sessão: " + (data.erro || "desconhecido"));
+        }
+      } catch (e) {
+        log("🚫 Falha ao conectar ao servidor: " + e.message);
+      }
+    }
+
+    async function explorar(dir) {
+      if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
+      const res = await apiFetch(`/explorar?session_id=${sessionId}&direcao=${dir}`);
       const data = await res.json();
       if (data.sucesso) {
         posX = data.pos_x ?? posX;
         posY = data.pos_y ?? posY;
         updateMap();
-        statusDiv.textContent = `Posição: (${posX}, ${posY})`;
+        ambient.textContent = data.descricao || "—";
         log(`➡️ ${data.descricao}`);
+        if (data.loot) {
+          await carregarInventario();
+        }
+        if (data.monstro) {
+          await atualizarStatus(); // hp_monstro volta a 100
+        }
       } else {
         log(`❌ ${data.erro}`);
       }
-    } catch (e) {
-      log("🚫 Falha ao explorar: " + e.message);
     }
-  }
 
-  // ---------- Ações ----------
-  async function acao(tipo) {
-    if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
-    try {
+    async function acao(tipo) {
+      if (!sessionId) return log("⚠️ Nenhuma sessão ativa.");
       const res = await apiFetch("/acao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -352,30 +265,28 @@
       });
       const data = await res.json();
       if (data.sucesso) {
-        log(`🧙 ${data.jogador}`);
-        log(`👹 ${data.monstro}`);
-        hpFill.style.width = `${Math.max(0, Math.min(100, data.hp_personagem))}%`;
+        if (data.jogador) log(`🧙 ${data.jogador}`);
+        if (data.monstro) log(`👹 ${data.monstro}`);
+        setHPBars(data.hp_personagem, data.hp_monstro);
+        battleFlag.textContent = `Em batalha: ${data.em_batalha ? "Sim" : "Não"}`;
+        await carregarInventario();
       } else {
         log(`❌ ${data.erro}`);
       }
-    } catch (e) {
-      log("🚫 Falha na ação: " + e.message);
     }
-  }
 
-  // Eventos dos botões
-  document.getElementById("btnUp").onclick = () => explorar("up");
-  document.getElementById("btnDown").onclick = () => explorar("down");
-  document.getElementById("btnLeft").onclick = () => explorar("left");
-  document.getElementById("btnRight").onclick = () => explorar("right");
+    // Controles
+    document.getElementById("btnUp").onclick = () => explorar("up");
+    document.getElementById("btnDown").onclick = () => explorar("down");
+    document.getElementById("btnLeft").onclick = () => explorar("left");
+    document.getElementById("btnRight").onclick = () => explorar("right");
+    document.getElementById("btnAttack").onclick = () => acao("atacar");
+    document.getElementById("btnBlock").onclick  = () => acao("bloquear");
+    document.getElementById("btnHeal").onclick   = () => acao("curar");
+    document.getElementById("btnRefresh").onclick = () => { atualizarStatus(); carregarInventario(); };
 
-  document.getElementById("btnAttack").onclick = () => acao("atacar");
-  document.getElementById("btnHeal").onclick = () => acao("curar");
-
-  // Inicializa
-  initMap();
-  novaSessao();
-</script>
-
+    // Inicialização
+    novaSessao();
+  </script>
 </body>
 </html>
